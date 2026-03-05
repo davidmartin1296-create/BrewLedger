@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bar Restock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:'Inter', system-ui, sans-serif;
+background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1626 100%);
+color:#fff;
+min-height:100vh;
+position:relative;
+overflow-x:hidden;
+}
+
+/* Animated gradient background */
+body::before {
+content: '';
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: radial-gradient(circle at 20% 50%, rgba(79, 195, 247, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(100, 200, 255, 0.08) 0%, transparent 50%);
+pointer-events: none;
+z-index: 0;
+animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+0%, 100% { transform: translate(0, 0); }
+50% { transform: translate(30px, 30px); }
+}
+
+/* Header */
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:24px 32px;
+background: rgba(15, 20, 40, 0.4);
+backdrop-filter: blur(20px);
+border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+position: relative;
+z-index: 1;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.title{
+font-size:28px;
+font-weight:700;
+background: linear-gradient(135deg, #4fc3f7 0%, #00e5ff 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+letter-spacing: -0.5px;
+}
+
+.reset-btn{
+background: linear-gradient(135deg, rgba(231, 76, 60, 0.8), rgba(192, 57, 43, 0.8));
+backdrop-filter: blur(10px);
+color:white;
+border: 1px solid rgba(255, 255, 255, 0.2);
+padding:12px 24px;
+border-radius:12px;
+font-weight:600;
+font-size: 14px;
+cursor:pointer;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.reset-btn:hover{
+background: linear-gradient(135deg, rgba(231, 76, 60, 1), rgba(192, 57, 43, 1));
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+}
+
+.reset-btn:active {
+transform: translateY(0);
+}
+
+/* Container */
+
+.container{
+padding:32px;
+display:flex;
+flex-direction:column;
+gap:20px;
+position: relative;
+z-index: 1;
+max-width: 600px;
+margin: 0 auto;
+}
+
+/* Inventory Card */
+
+.card{
+background: rgba(25, 35, 65, 0.4);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+border-radius:20px;
+padding:24px;
+display:flex;
+flex-direction:column;
+gap:16px;
+border: 1px solid rgba(255, 255, 255, 0.15);
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+background: rgba(25, 35, 65, 0.6);
+border-color: rgba(79, 195, 247, 0.3);
+box-shadow: 0 12px 48px rgba(79, 195, 247, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+transform: translateY(-4px);
+}
+
+.card.done{
+background: rgba(30, 59, 43, 0.5);
+border-color: rgba(123, 237, 159, 0.3);
+}
+
+.card.done:hover {
+background: rgba(30, 59, 43, 0.7);
+}
+
+.card.done .item-name{
+text-decoration:line-through;
+opacity:.6;
+}
+
+.card.done .qty {
+opacity: 0.7;
+}
+
+/* Item Header */
+
+.item-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.item-name{
+font-weight:600;
+font-size:18px;
+letter-spacing: -0.3px;
+}
+
+/* Quantity */
+
+.qty{
+font-size:18px;
+font-weight:700;
+background: linear-gradient(135deg, #4fc3f7 0%, #00e5ff 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+}
+
+/* Buttons */
+
+.controls{
+display:flex;
+gap:12px;
+}
+
+button{
+flex:1;
+padding:14px;
+border:none;
+border-radius:12px;
+font-weight:600;
+font-size:15px;
+cursor:pointer;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+font-weight: 500;
+letter-spacing: 0.3px;
+}
+
+.btn-minus{
+background: linear-gradient(135deg, rgba(231, 76, 60, 0.7), rgba(192, 57, 43, 0.7));
+backdrop-filter: blur(10px);
+color:white;
+box-shadow: 0 4px 15px rgba(231, 76, 60, 0.25);
+}
+
+.btn-minus:hover{
+background: linear-gradient(135deg, rgba(231, 76, 60, 0.9), rgba(192, 57, 43, 0.9));
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.btn-minus:active {
+transform: translateY(0);
+}
+
+.btn-plus{
+background: linear-gradient(135deg, rgba(100, 150, 200, 0.6), rgba(79, 195, 247, 0.6));
+backdrop-filter: blur(10px);
+color:white;
+box-shadow: 0 4px 15px rgba(79, 195, 247, 0.25);
+}
+
+.btn-plus:hover{
+background: linear-gradient(135deg, rgba(100, 150, 200, 0.85), rgba(79, 195, 247, 0.85));
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
+}
+
+.btn-plus:active {
+transform: translateY(0);
+}
+
+button:disabled{
+opacity:.4;
+cursor:not-allowed;
+transform: none !important;
+}
+
+button:disabled:hover {
+transform: none;
+box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Completed label */
+
+.done-label{
+font-size:13px;
+color:#7bed9f;
+font-weight:600;
+letter-spacing: 0.5px;
+opacity: 0.9;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div class="title">Bar Restock</div>
+<button class="reset-btn" onclick="resetList()">Reset</button>
+</div>
+
+<div class="container" id="inventoryContainer"></div>
+
+<script>
+
+const inventoryData = [
+{ name: "Bourbon", targetQty: 3, currentQty: 3 },
+{ name: "Silver Tequila", targetQty: 5, currentQty: 5 },
+{ name: "London Dry Gin", targetQty: 2, currentQty: 2 },
+{ name: "Sweet Vermouth", targetQty: 2, currentQty: 2 },
+{ name: "Limes (Bag)", targetQty: 4, currentQty: 4 },
+{ name: "Simple Syrup (L)", targetQty: 3, currentQty: 3 },
+{ name: "Angostura Bitters", targetQty: 1, currentQty: 1 }
+];
+
+const container = document.getElementById("inventoryContainer");
+
+function renderInventory(){
+
+container.innerHTML = inventoryData.map((item,index)=>{
+
+const done = item.currentQty === 0;
+
+return `
+
+<div class="card ${done ? "done" : ""}" id="card-${index}">
+
+<div class="item-row">
+<div class="item-name">${item.name}</div>
+<div class="qty">${item.currentQty} / ${item.targetQty}</div>
+</div>
+
+${done ? `<div class="done-label">Completed</div>` : ``}
+
+<div class="controls">
+
+<button class="btn-minus"
+onclick="decrement(${index})"
+${done ? "disabled" : ""}>
+Received
+</button>
+
+<button class="btn-plus"
+onclick="increment(${index})"
+${item.currentQty === item.targetQty ? "disabled" : ""}>
+Undo
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+function decrement(index){
+
+if(inventoryData[index].currentQty > 0){
+inventoryData[index].currentQty--;
+renderInventory();
+}
+
+}
+
+function increment(index){
+
+if(inventoryData[index].currentQty < inventoryData[index].targetQty){
+inventoryData[index].currentQty++;
+renderInventory();
+}
+
+}
+
+function resetList(){
+
+if(confirm("Reset restock list?")){
+
+inventoryData.forEach(item=>{
+item.currentQty = item.targetQty;
+});
+
+renderInventory();
+
+}
+
+}
+
+renderInventory();
+
+</script>
+
+</body>
+</html>
