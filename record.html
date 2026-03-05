@@ -34,6 +34,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .catalog-group-name{font-size:12px;font-weight:700;color:#f6d7b6;margin-bottom:6px}
 .catalog-items{display:grid;gap:6px}
 .catalog-item{height:38px;border-radius:9px;border:1px solid rgba(184,115,51,.28);background:rgba(255,255,255,.02);color:#f5f3ef;font-size:12px;font-weight:600;padding:0 10px;text-align:left;display:flex;align-items:center}
+.catalog-item.active,.suggestion.active{border-color:#da9a5c;background:linear-gradient(135deg,rgba(155,95,43,.45),rgba(184,115,51,.35));color:#fff}
 .catalog-empty{font-size:12px;color:rgba(245,243,239,.6);padding:8px 2px}
 .selected{margin-top:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px}
 .title{font-size:16px;font-weight:800;letter-spacing:-.2px}
@@ -41,6 +42,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .qty-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .qty-btn{height:40px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#ffd9b8;font-size:14px;font-weight:700}
 .qty-btn.active{background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;border-color:#da9a5c}
+.qty-step{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;margin-top:10px}
+.qty-step-btn{height:40px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#ffd9b8;font-size:20px;font-weight:800;line-height:1}
+.qty-step-value{height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
 .row{display:flex;gap:8px;margin-top:10px}
 .input{flex:1;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;padding:0 10px}
 .save{height:44px;width:100%;margin-top:12px;border-radius:11px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800}
@@ -83,6 +87,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
         <button class="qty-btn" data-qty="3">+3</button>
         <button class="qty-btn" data-qty="5">+5</button>
       </div>
+      <div class="qty-step">
+        <button class="qty-step-btn" id="decreaseQtyBtn" type="button">-</button>
+        <div class="qty-step-value" id="qtyDisplay">1 bottle</div>
+        <button class="qty-step-btn" id="increaseQtyBtn" type="button">+</button>
+      </div>
       <div class="row">
         <input id="qtyInput" class="input" type="number" min="1" placeholder="Custom quantity">
       </div>
@@ -108,6 +117,7 @@ import { barStockList, getAllMasterDrinks } from "./data/barStockList.js";
 
 let drinks = [];
 let selectedDrink = null;
+let selectedDrinkId = null;
 let selectedQty = 1;
 let userProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User' };
 const masterDrinks = getAllMasterDrinks();
@@ -121,11 +131,19 @@ const suggestionsEl = document.getElementById('suggestions');
 const catalogListEl = document.getElementById('catalogList');
 const selectedBox = document.getElementById('selectedBox');
 const selectedDrinkEl = document.getElementById('selectedDrink');
+const selectedHelpEl = selectedBox.querySelector('.help');
+const qtyDisplayEl = document.getElementById('qtyDisplay');
 const qtyInput = document.getElementById('qtyInput');
 const messageEl = document.getElementById('message');
+const increaseQtyBtn = document.getElementById('increaseQtyBtn');
+const decreaseQtyBtn = document.getElementById('decreaseQtyBtn');
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+}
+
+function renderQtyDisplay() {
+  qtyDisplayEl.textContent = `${selectedQty} ${selectedQty === 1 ? 'bottle' : 'bottles'}`;
 }
 
 function renderSuggestions(queryText) {
@@ -136,7 +154,7 @@ function renderSuggestions(queryText) {
     suggestionsEl.innerHTML = '<div style="font-size:12px;color:rgba(245,243,239,.6);padding:8px 2px">No matching drinks found.</div>';
     return;
   }
-  suggestionsEl.innerHTML = matches.map((d) => `<button class="suggestion" data-drink-id="${d._id}"><span>${esc(d.name)}</span><span class="suggestion-cat">${esc(d.category || 'Other')}</span></button>`).join('');
+  suggestionsEl.innerHTML = matches.map((d) => `<button class="suggestion ${selectedDrinkId === d._id ? 'active' : ''}" type="button" data-drink-id="${d._id}"><span>${esc(d.name)}</span><span class="suggestion-cat">${esc(d.category || 'Other')}</span></button>`).join('');
 }
 
 function renderCatalog(queryText) {
@@ -164,7 +182,7 @@ function renderCatalog(queryText) {
         <div class="catalog-group">
           <div class="catalog-group-name">${esc(category)}</div>
           <div class="catalog-items">
-            ${items.map((d) => `<button class="catalog-item" data-drink-id="${d._id}">${esc(d.name || '')}</button>`).join('')}
+            ${items.map((d) => `<button class="catalog-item ${selectedDrinkId === d._id ? 'active' : ''}" type="button" data-drink-id="${d._id}">${esc(d.name || '')}</button>`).join('')}
           </div>
         </div>
       `;
@@ -195,12 +213,19 @@ function mergeDrinksWithMaster(dbDrinks) {
 
 function pickDrink(drink) {
   selectedDrink = drink;
+  selectedDrinkId = drink._id;
   selectedQty = 1;
   selectedDrinkEl.textContent = (drink.name || '').toUpperCase();
+  selectedHelpEl.textContent = 'Stock needed at bar: default 1 bottle. Adjust quantity, then save task.';
   selectedBox.style.display = 'block';
   qtyInput.value = '';
-  messageEl.textContent = '';
+  renderQtyDisplay();
+  messageEl.textContent = `${drink.name}: marked as needing restock.`;
+  messageEl.style.color = '#fcd34d';
   document.querySelectorAll('.qty-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-qty') === '1'));
+  renderSuggestions(searchInput.value);
+  renderCatalog(searchInput.value);
+  selectedBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function saveTask() {
@@ -223,6 +248,7 @@ async function saveTask() {
       updatedAt: new Date().toISOString()
     });
     messageEl.textContent = `${selectedDrink.name}: added ${qty} bottles to existing task.`;
+    messageEl.style.color = '#86efac';
   } else {
     await addDoc(collection(db, 'restock_tasks'), {
       drinkName: selectedDrink.name,
@@ -237,6 +263,7 @@ async function saveTask() {
       status: 'active'
     });
     messageEl.textContent = `${selectedDrink.name}: ${qty} bottles needed.`;
+    messageEl.style.color = '#86efac';
   }
 }
 
@@ -252,6 +279,8 @@ document.addEventListener('click', async (e) => {
   const qBtn = e.target.closest('.qty-btn');
   if (qBtn) {
     selectedQty = Number(qBtn.getAttribute('data-qty'));
+    qtyInput.value = '';
+    renderQtyDisplay();
     document.querySelectorAll('.qty-btn').forEach((b) => b.classList.remove('active'));
     qBtn.classList.add('active');
   }
@@ -259,6 +288,26 @@ document.addEventListener('click', async (e) => {
 
 searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
 searchInput.addEventListener('input', () => renderCatalog(searchInput.value));
+qtyInput.addEventListener('input', () => {
+  const val = Math.max(1, Number(qtyInput.value || 1));
+  if (qtyInput.value) {
+    selectedQty = val;
+    renderQtyDisplay();
+    document.querySelectorAll('.qty-btn').forEach((b) => b.classList.remove('active'));
+  }
+});
+increaseQtyBtn.addEventListener('click', () => {
+  selectedQty = Math.max(1, selectedQty + 1);
+  qtyInput.value = '';
+  renderQtyDisplay();
+  document.querySelectorAll('.qty-btn').forEach((b) => b.classList.remove('active'));
+});
+decreaseQtyBtn.addEventListener('click', () => {
+  selectedQty = Math.max(1, selectedQty - 1);
+  qtyInput.value = '';
+  renderQtyDisplay();
+  document.querySelectorAll('.qty-btn').forEach((b) => b.classList.remove('active'));
+});
 document.getElementById('saveBtn').addEventListener('click', saveTask);
 
 if (!hasCodeAccess()) {
