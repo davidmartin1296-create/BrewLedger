@@ -81,7 +81,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { addDoc, collection, getDocs, onSnapshot, query, where, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
@@ -89,6 +89,7 @@ let drinks = [];
 let selectedDrink = null;
 let selectedQty = 1;
 let userProfile = null;
+let recoveringCodeSession = false;
 
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
@@ -185,6 +186,22 @@ document.getElementById('saveBtn').addEventListener('click', saveTask);
 
 onAuthStateChanged(auth, async (user) => {
   if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
+
+  if (!user && hasCodeAccess()) {
+    if (recoveringCodeSession) return;
+    recoveringCodeSession = true;
+    try {
+      await signInAnonymously(auth);
+      return;
+    } catch (err) {
+      localStorage.removeItem('brew_access_granted');
+      localStorage.removeItem('brew_access_name');
+      window.location.href = '/login.html';
+      return;
+    } finally {
+      recoveringCodeSession = false;
+    }
+  }
 
   if (user) {
     const userDocs = await getDocs(query(collection(db, 'users'), where('email', '==', user.email)));

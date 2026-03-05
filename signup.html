@@ -58,7 +58,7 @@ label{display:block;font-size:12px;color:#e9d5c2;margin-bottom:6px}
 </main>
 
 <script type="module">
-import { createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
@@ -83,14 +83,27 @@ if (hasCodeAccess()) {
 
 onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/dashboard.html'; });
 
-quickBtn.addEventListener('click', () => {
+quickBtn.addEventListener('click', async () => {
+  msg.textContent = '';
   const code = document.getElementById('quickCode').value.trim();
   if (code !== ACCESS_CODE) {
     msg.textContent = 'Invalid access code.';
     return;
   }
-  grantCodeAccess('Access Code User');
-  window.location.href = '/dashboard.html';
+  quickBtn.disabled = true;
+  try {
+    grantCodeAccess('Access Code User');
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+    window.location.href = '/dashboard.html';
+  } catch (err) {
+    localStorage.removeItem('brew_access_granted');
+    localStorage.removeItem('brew_access_name');
+    msg.textContent = err?.message || 'Quick access failed.';
+  } finally {
+    quickBtn.disabled = false;
+  }
 });
 
 form.addEventListener('submit', async (e) => {

@@ -63,7 +63,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
@@ -71,8 +71,26 @@ function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
 
+let recoveringCodeSession = false;
+
 onAuthStateChanged(auth, async (user) => {
   if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
+
+  if (!user && hasCodeAccess()) {
+    if (recoveringCodeSession) return;
+    recoveringCodeSession = true;
+    try {
+      await signInAnonymously(auth);
+      return;
+    } catch (err) {
+      localStorage.removeItem('brew_access_granted');
+      localStorage.removeItem('brew_access_name');
+      window.location.href = '/login.html';
+      return;
+    } finally {
+      recoveringCodeSession = false;
+    }
+  }
 
   let profile;
   if (user) {

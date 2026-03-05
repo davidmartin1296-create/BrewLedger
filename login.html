@@ -57,7 +57,7 @@ label{display:block;font-size:12px;color:#e9d5c2;margin-bottom:6px}
 </main>
 
 <script type="module">
-import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth } from "./firebase.js";
 
 const ACCESS_CODE = 'BREWS2026!';
@@ -81,14 +81,27 @@ if (hasCodeAccess()) {
 
 onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/dashboard.html'; });
 
-accessBtn.addEventListener('click', () => {
+accessBtn.addEventListener('click', async () => {
+  msg.textContent = '';
   const code = document.getElementById('accessCode').value.trim();
   if (code !== ACCESS_CODE) {
     msg.textContent = 'Invalid access code.';
     return;
   }
-  grantCodeAccess('Access Code User');
-  window.location.href = '/dashboard.html';
+  accessBtn.disabled = true;
+  try {
+    grantCodeAccess('Access Code User');
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+    window.location.href = '/dashboard.html';
+  } catch (err) {
+    localStorage.removeItem('brew_access_granted');
+    localStorage.removeItem('brew_access_name');
+    msg.textContent = err?.message || 'Quick access failed.';
+  } finally {
+    accessBtn.disabled = false;
+  }
 });
 
 form.addEventListener('submit', async (e) => {
