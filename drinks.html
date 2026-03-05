@@ -73,13 +73,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 <script type="module">
 import { addDoc, collection, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
-import { getAllMasterDrinks } from "./data/barStockList.js";
 
 const listEl = document.getElementById('drinkList');
 const msgEl = document.getElementById('message');
 let currentDrinks = [];
 let hasLiveSync = false;
-const masterDrinks = getAllMasterDrinks().map((d, i) => ({ _id: `master-${i}`, ...d }));
+let masterDrinks = [];
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
 function hasCodeAccess() { return localStorage.getItem('brew_access_granted') === '1'; }
@@ -111,6 +110,20 @@ function renderMergedList(dbDrinks) {
   dbDrinks.forEach((d) => byDrink.set((d.name || '').toLowerCase(), d));
   renderDrinks(Array.from(byDrink.values()), { readOnly: !hasLiveSync });
 }
+
+async function initMasterList() {
+  try {
+    const mod = await import("./data/barStockList.js");
+    const list = typeof mod.getAllMasterDrinks === 'function' ? mod.getAllMasterDrinks() : [];
+    masterDrinks = list.map((d, i) => ({ _id: `master-${i}`, ...d }));
+  } catch {
+    masterDrinks = [];
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Could not load master list file. Live Firebase drinks will still work.';
+  }
+}
+
+await initMasterList();
 
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';

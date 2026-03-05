@@ -10,6 +10,8 @@
   "routes": [
     { "src": "/images/(.*)",     "dest": "/public/images/$1" },
     { "src": "/manifest.json",   "dest": "/public/manifest.json" },
+    { "src": "/firebase.js",     "dest": "/firebase.js" },
+    { "src": "/data/(.*)",       "dest": "/data/$1" },
     { "src": "/welcome.html",    "dest": "/welcome.html" },
     { "src": "/login.html",      "dest": "/login.html" },
     { "src": "/signup.html",     "dest": "/signup.html" },
