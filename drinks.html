@@ -21,6 +21,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .field{height:44px;width:100%;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;font-size:14px;margin-bottom:9px}
 .grid{display:grid;grid-template-columns:1fr 110px;gap:8px}
 .btn{height:44px;border-radius:10px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.btn.secondary{margin-top:8px;border:1px solid rgba(184,115,51,.42);background:rgba(184,115,51,.14);color:#f7d8b8}
 .list{display:grid;gap:8px}
 .item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:10px;display:flex;align-items:center;gap:8px}
 .item .name{flex:1;font-size:14px;font-weight:700}
@@ -45,6 +46,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
       <input id="drinkCategory" class="field" placeholder="Category">
     </div>
     <button id="addBtn" class="btn">Add Drink</button>
+    <button id="loadMasterBtn" class="btn secondary">Load Master Drink List</button>
     <div id="message" class="msg"></div>
   </section>
   <section class="card list" id="drinkList"></section>
@@ -59,13 +61,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { addDoc, collection, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
+import { getAllMasterDrinks } from "./data/barStockList.js";
 
 const listEl = document.getElementById('drinkList');
 const msgEl = document.getElementById('message');
-let recoveringCodeSession = false;
+let currentDrinks = [];
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
 function hasCodeAccess() { return localStorage.getItem('brew_access_granted') === '1'; }
@@ -73,24 +76,10 @@ function hasCodeAccess() { return localStorage.getItem('brew_access_granted') ==
 onAuthStateChanged(auth, (user) => {
   if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
 
-  if (!user && hasCodeAccess()) {
-    if (recoveringCodeSession) return;
-    recoveringCodeSession = true;
-    signInAnonymously(auth)
-      .catch(() => {
-        localStorage.removeItem('brew_access_granted');
-        localStorage.removeItem('brew_access_name');
-        window.location.href = '/login.html';
-      })
-      .finally(() => {
-        recoveringCodeSession = false;
-      });
-    return;
-  }
-
   onSnapshot(collection(db, 'drinks'), (snap) => {
     const drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }))
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    currentDrinks = drinks;
 
     if (!drinks.length) {
       listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">No drinks yet.</div>';
@@ -103,6 +92,8 @@ onAuthStateChanged(auth, (user) => {
         <button data-del="${d._id}">Delete</button>
       </div>
     `).join('');
+  }, () => {
+    listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">Access code works, but this page needs Firebase write permissions to edit drinks.</div>';
   });
 });
 
@@ -114,6 +105,23 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   document.getElementById('drinkName').value = '';
   document.getElementById('drinkCategory').value = '';
   msgEl.textContent = 'Drink added.';
+});
+
+document.getElementById('loadMasterBtn').addEventListener('click', async () => {
+  const master = getAllMasterDrinks();
+  const existing = new Set(currentDrinks.map((d) => (d.name || '').toLowerCase()));
+  const toAdd = master.filter((d) => !existing.has(d.name.toLowerCase()));
+
+  if (!toAdd.length) {
+    msgEl.textContent = 'Master list already loaded.';
+    return;
+  }
+
+  const now = new Date().toISOString();
+  for (const drink of toAdd) {
+    await addDoc(collection(db, 'drinks'), { name: drink.name, category: drink.category, createdAt: now });
+  }
+  msgEl.textContent = `Added ${toAdd.length} drinks from master list.`;
 });
 
 document.addEventListener('click', async (e) => {

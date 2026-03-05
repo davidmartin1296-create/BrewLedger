@@ -25,6 +25,8 @@ label{display:block;font-size:12px;color:#e9d5c2;margin-bottom:6px}
 .msg{min-height:16px;margin-top:10px;font-size:12px;color:#fecaca}
 .links{margin-top:12px;display:flex;justify-content:space-between;font-size:12px}
 .links a{color:#f7d8b8;text-decoration:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45);color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -55,9 +57,10 @@ label{display:block;font-size:12px;color:#e9d5c2;margin-bottom:6px}
     <div class="links"><a href="/welcome.html">Back</a><a href="/signup.html">Create account</a></div>
   </section>
 </main>
+<div class="toast" id="toast"></div>
 
 <script type="module">
-import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth } from "./firebase.js";
 
 const ACCESS_CODE = 'BREWS2026!';
@@ -65,6 +68,32 @@ const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 const submitBtn = document.getElementById('submitBtn');
 const accessBtn = document.getElementById('accessBtn');
+const toast = document.getElementById('toast');
+let toastTimer = null;
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function explainLoginError(err) {
+  const code = err?.code || '';
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+    return 'Email or password is incorrect. Please try again.';
+  }
+  if (code === 'auth/invalid-email') {
+    return 'That email address does not look valid.';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Too many attempts right now. Please wait a minute and try again.';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Could not connect. Check your internet and try again.';
+  }
+  return 'Could not sign in right now. Please try again.';
+}
 
 function grantCodeAccess(name = 'Bar Staff') {
   localStorage.setItem('brew_access_granted', '1');
@@ -85,23 +114,11 @@ accessBtn.addEventListener('click', async () => {
   msg.textContent = '';
   const code = document.getElementById('accessCode').value.trim();
   if (code !== ACCESS_CODE) {
-    msg.textContent = 'Invalid access code.';
+    showToast('That access code is not correct.');
     return;
   }
-  accessBtn.disabled = true;
-  try {
-    grantCodeAccess('Access Code User');
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-    window.location.href = '/dashboard.html';
-  } catch (err) {
-    localStorage.removeItem('brew_access_granted');
-    localStorage.removeItem('brew_access_name');
-    msg.textContent = err?.message || 'Quick access failed.';
-  } finally {
-    accessBtn.disabled = false;
-  }
+  grantCodeAccess('Access Code User');
+  window.location.href = '/dashboard.html';
 });
 
 form.addEventListener('submit', async (e) => {
@@ -113,7 +130,7 @@ form.addEventListener('submit', async (e) => {
     grantCodeAccess(document.getElementById('email').value.trim());
     window.location.href = '/dashboard.html';
   } catch (err) {
-    msg.textContent = err?.message || 'Login failed.';
+    showToast(explainLoginError(err));
   } finally {
     submitBtn.disabled = false;
   }

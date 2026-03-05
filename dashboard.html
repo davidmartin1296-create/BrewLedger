@@ -77,7 +77,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, getDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
@@ -86,7 +86,6 @@ const userNameEl = document.getElementById('userName');
 let currentUser = null;
 let currentProfile = null;
 let tasksUnsub = null;
-let recoveringCodeSession = false;
 
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
@@ -230,22 +229,6 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  if (!user && hasCodeAccess()) {
-    if (recoveringCodeSession) return;
-    recoveringCodeSession = true;
-    try {
-      await signInAnonymously(auth);
-      return;
-    } catch (err) {
-      localStorage.removeItem('brew_access_granted');
-      localStorage.removeItem('brew_access_name');
-      window.location.href = '/login.html';
-      return;
-    } finally {
-      recoveringCodeSession = false;
-    }
-  }
-
   currentUser = user || null;
   if (currentUser) {
     const userRef = doc(db, 'users', currentUser.uid);
@@ -261,6 +244,8 @@ onAuthStateChanged(auth, async (user) => {
   tasksUnsub = onSnapshot(collection(db, 'restock_tasks'), (snap) => {
     const tasks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
     renderTasks(tasks);
+  }, () => {
+    taskListEl.innerHTML = '<div class="panel empty">Access code accepted. Live task data requires Firebase sign-in permissions.</div>';
   });
 });
 </script>
