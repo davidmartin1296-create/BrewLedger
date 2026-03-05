@@ -30,6 +30,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .item .name{flex:1;font-size:14px;font-weight:700}
 .item .cat{font-size:11px;color:rgba(245,243,239,.62)}
 .item button{height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.14);color:#fecaca;font-size:12px;font-weight:700}
+.pill{font-size:10px;padding:3px 7px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8}
 .msg{margin-top:8px;font-size:12px;min-height:16px;color:#86efac}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 .nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
@@ -77,66 +78,126 @@ import { getAllMasterDrinks } from "./data/barStockList.js";
 const listEl = document.getElementById('drinkList');
 const msgEl = document.getElementById('message');
 let currentDrinks = [];
+let hasLiveSync = false;
+const masterDrinks = getAllMasterDrinks().map((d, i) => ({ _id: `master-${i}`, ...d }));
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
 function hasCodeAccess() { return localStorage.getItem('brew_access_granted') === '1'; }
+function byName(a, b) { return (a.name || '').localeCompare(b.name || ''); }
+
+function renderDrinks(drinks, options = {}) {
+  const readOnly = options.readOnly === true;
+  const sorted = drinks.slice().sort(byName);
+  if (!sorted.length) {
+    listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">No drinks found.</div>';
+    return;
+  }
+
+  listEl.innerHTML = sorted.map((d) => `
+    <div class="item">
+      <div class="name">
+        ${esc(d.name || '')}
+        <div class="cat">${esc(d.category || 'Other')}</div>
+      </div>
+      ${d._id.startsWith('master-') ? '<span class="pill">Master</span>' : ''}
+      ${readOnly || d._id.startsWith('master-') ? '' : `<button data-del="${d._id}">Delete</button>`}
+    </div>
+  `).join('');
+}
+
+function renderMergedList(dbDrinks) {
+  const byDrink = new Map();
+  masterDrinks.forEach((d) => byDrink.set((d.name || '').toLowerCase(), d));
+  dbDrinks.forEach((d) => byDrink.set((d.name || '').toLowerCase(), d));
+  renderDrinks(Array.from(byDrink.values()), { readOnly: !hasLiveSync });
+}
 
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';
 } else {
-  onSnapshot(collection(db, 'drinks'), (snap) => {
-    const drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }))
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    currentDrinks = drinks;
+  listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">Loading drinks list...</div>';
 
-    if (!drinks.length) {
-      listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">No drinks yet.</div>';
+  onSnapshot(collection(db, 'drinks'), (snap) => {
+    hasLiveSync = true;
+    currentDrinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
+    renderMergedList(currentDrinks);
+    msgEl.textContent = '';
+  }, (err) => {
+    hasLiveSync = false;
+    currentDrinks = [];
+    renderDrinks(masterDrinks, { readOnly: true });
+    msgEl.style.color = '#fcd34d';
+    if (err?.code === 'permission-denied') {
+      msgEl.textContent = 'Live drinks sync is blocked by Firebase rules. Showing master list only.';
       return;
     }
-
-    listEl.innerHTML = drinks.map((d) => `
-      <div class="item">
-        <div class="name">${esc(d.name || '')}<div class="cat">${esc(d.category || 'Other')}</div></div>
-        <button data-del="${d._id}">Delete</button>
-      </div>
-    `).join('');
-  }, () => {
-    listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">Access code works, but this page needs Firebase write permissions to edit drinks.</div>';
+    msgEl.textContent = 'Could not load live drinks from Firebase. Showing master list only.';
   });
 }
 
 document.getElementById('addBtn').addEventListener('click', async () => {
+  if (!hasLiveSync) {
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Live Firebase access is unavailable, so new drinks cannot be saved right now.';
+    return;
+  }
+
   const name = document.getElementById('drinkName').value.trim();
   const category = document.getElementById('drinkCategory').value.trim() || 'Other';
   if (!name) return;
-  await addDoc(collection(db, 'drinks'), { name, category, createdAt: new Date().toISOString() });
-  document.getElementById('drinkName').value = '';
-  document.getElementById('drinkCategory').value = '';
-  msgEl.textContent = 'Drink added.';
+  try {
+    await addDoc(collection(db, 'drinks'), { name, category, createdAt: new Date().toISOString() });
+    document.getElementById('drinkName').value = '';
+    document.getElementById('drinkCategory').value = '';
+    msgEl.style.color = '#86efac';
+    msgEl.textContent = 'Drink added.';
+  } catch {
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Could not save this drink to Firebase right now.';
+  }
 });
 
 document.getElementById('loadMasterBtn').addEventListener('click', async () => {
-  const master = getAllMasterDrinks();
+  if (!hasLiveSync) {
+    renderDrinks(masterDrinks, { readOnly: true });
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Showing built-in master list. Connect Firebase write access to save it online.';
+    return;
+  }
+
+  const master = masterDrinks;
   const existing = new Set(currentDrinks.map((d) => (d.name || '').toLowerCase()));
   const toAdd = master.filter((d) => !existing.has(d.name.toLowerCase()));
 
   if (!toAdd.length) {
+    msgEl.style.color = '#86efac';
     msgEl.textContent = 'Master list already loaded.';
     return;
   }
 
-  const now = new Date().toISOString();
-  for (const drink of toAdd) {
-    await addDoc(collection(db, 'drinks'), { name: drink.name, category: drink.category, createdAt: now });
+  try {
+    const now = new Date().toISOString();
+    for (const drink of toAdd) {
+      await addDoc(collection(db, 'drinks'), { name: drink.name, category: drink.category, createdAt: now });
+    }
+    msgEl.style.color = '#86efac';
+    msgEl.textContent = `Added ${toAdd.length} drinks from master list.`;
+  } catch {
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Could not load master list into Firebase right now.';
   }
-  msgEl.textContent = `Added ${toAdd.length} drinks from master list.`;
 });
 
 document.addEventListener('click', async (e) => {
   const del = e.target.closest('[data-del]');
   if (!del) return;
   if (!window.confirm('Delete this drink?')) return;
-  await deleteDoc(doc(db, 'drinks', del.getAttribute('data-del')));
+  try {
+    await deleteDoc(doc(db, 'drinks', del.getAttribute('data-del')));
+  } catch {
+    msgEl.style.color = '#fcd34d';
+    msgEl.textContent = 'Could not delete this drink right now.';
+  }
 });
 </script>
 </body>
