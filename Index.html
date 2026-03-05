@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bar Restock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Inter, system-ui, sans-serif;
+background:#0f1115;
+color:#fff;
+}
+
+/* Header */
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px;
+background:#151821;
+border-bottom:1px solid #262a35;
+}
+
+.title{
+font-size:20px;
+font-weight:600;
+}
+
+.reset-btn{
+background:#e74c3c;
+color:white;
+border:none;
+padding:10px 14px;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+}
+
+.reset-btn:hover{
+background:#c0392b;
+}
+
+/* Container */
+
+.container{
+padding:16px;
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+
+/* Inventory Card */
+
+.card{
+background:#1b1f2a;
+border-radius:12px;
+padding:16px;
+display:flex;
+flex-direction:column;
+gap:10px;
+box-shadow:0 6px 12px rgba(0,0,0,0.25);
+transition:all .2s ease;
+}
+
+.card.done{
+background:#1e3b2b;
+opacity:.85;
+}
+
+.card.done .item-name{
+text-decoration:line-through;
+opacity:.7;
+}
+
+/* Item Header */
+
+.item-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.item-name{
+font-weight:600;
+font-size:16px;
+}
+
+/* Quantity */
+
+.qty{
+font-size:18px;
+font-weight:600;
+color:#4fc3f7;
+}
+
+/* Buttons */
+
+.controls{
+display:flex;
+gap:10px;
+}
+
+button{
+flex:1;
+padding:14px;
+border:none;
+border-radius:8px;
+font-weight:600;
+font-size:15px;
+cursor:pointer;
+}
+
+.btn-minus{
+background:#e74c3c;
+color:white;
+}
+
+.btn-minus:hover{
+background:#c0392b;
+}
+
+.btn-plus{
+background:#34495e;
+color:white;
+}
+
+.btn-plus:hover{
+background:#2c3e50;
+}
+
+button:disabled{
+opacity:.5;
+cursor:not-allowed;
+}
+
+/* Completed label */
+
+.done-label{
+font-size:13px;
+color:#7bed9f;
+font-weight:600;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div class="title">Bar Restock</div>
+<button class="reset-btn" onclick="resetList()">Reset</button>
+</div>
+
+<div class="container" id="inventoryContainer"></div>
+
+<script>
+
+const inventoryData = [
+{ name: "Bourbon", targetQty: 3, currentQty: 3 },
+{ name: "Silver Tequila", targetQty: 5, currentQty: 5 },
+{ name: "London Dry Gin", targetQty: 2, currentQty: 2 },
+{ name: "Sweet Vermouth", targetQty: 2, currentQty: 2 },
+{ name: "Limes (Bag)", targetQty: 4, currentQty: 4 },
+{ name: "Simple Syrup (L)", targetQty: 3, currentQty: 3 },
+{ name: "Angostura Bitters", targetQty: 1, currentQty: 1 }
+];
+
+const container = document.getElementById("inventoryContainer");
+
+function renderInventory(){
+
+container.innerHTML = inventoryData.map((item,index)=>{
+
+const done = item.currentQty === 0;
+
+return `
+
+<div class="card ${done ? "done" : ""}" id="card-${index}">
+
+<div class="item-row">
+<div class="item-name">${item.name}</div>
+<div class="qty">${item.currentQty} / ${item.targetQty}</div>
+</div>
+
+${done ? `<div class="done-label">Completed</div>` : ``}
+
+<div class="controls">
+
+<button class="btn-minus"
+onclick="decrement(${index})"
+${done ? "disabled" : ""}>
+Received
+</button>
+
+<button class="btn-plus"
+onclick="increment(${index})"
+${item.currentQty === item.targetQty ? "disabled" : ""}>
+Undo
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+function decrement(index){
+
+if(inventoryData[index].currentQty > 0){
+inventoryData[index].currentQty--;
+renderInventory();
+}
+
+}
+
+function increment(index){
+
+if(inventoryData[index].currentQty < inventoryData[index].targetQty){
+inventoryData[index].currentQty++;
+renderInventory();
+}
+
+}
+
+function resetList(){
+
+if(confirm("Reset restock list?")){
+
+inventoryData.forEach(item=>{
+item.currentQty = item.targetQty;
+});
+
+renderInventory();
+
+}
+
+}
+
+renderInventory();
+
+</script>
+
+</body>
+</html>
