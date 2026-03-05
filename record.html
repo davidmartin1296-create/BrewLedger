@@ -90,6 +90,10 @@ let selectedDrink = null;
 let selectedQty = 1;
 let userProfile = null;
 
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
+
 const searchInput = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('suggestions');
 const selectedBox = document.getElementById('selectedBox');
@@ -150,8 +154,8 @@ async function saveTask() {
       replacedQty: 0,
       outstandingQty: qty,
       comments: [],
-      createdBy: auth.currentUser.uid,
-      createdByName: userProfile?.name || auth.currentUser.email || 'Staff',
+      createdBy: auth.currentUser?.uid || null,
+      createdByName: userProfile?.name || auth.currentUser?.email || localStorage.getItem('brew_access_name') || 'Staff',
       createdAt: new Date().toISOString(),
       status: 'active'
     });
@@ -180,9 +184,14 @@ searchInput.addEventListener('input', () => renderSuggestions(searchInput.value)
 document.getElementById('saveBtn').addEventListener('click', saveTask);
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = '/login.html'; return; }
-  const userDocs = await getDocs(query(collection(db, 'users'), where('email', '==', user.email)));
-  userProfile = userDocs.empty ? { name: user.email } : userDocs.docs[0].data();
+  if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
+
+  if (user) {
+    const userDocs = await getDocs(query(collection(db, 'users'), where('email', '==', user.email)));
+    userProfile = userDocs.empty ? { name: user.email } : userDocs.docs[0].data();
+  } else {
+    userProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User' };
+  }
 
   onSnapshot(collection(db, 'drinks'), (snap) => {
     drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));

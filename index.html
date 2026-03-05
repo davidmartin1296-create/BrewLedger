@@ -78,13 +78,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, getDoc, onSnapshot, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, getDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
 const taskListEl = document.getElementById('taskList');
 const userNameEl = document.getElementById('userName');
 let currentUser = null;
 let currentProfile = null;
+let tasksUnsub = null;
+
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
 
 function fmtDate(val) {
   if (!val) return '--';
@@ -219,18 +224,24 @@ document.addEventListener('click', async (e) => {
 });
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
+  if (!user && !hasCodeAccess()) {
     window.location.href = '/login.html';
     return;
   }
-  currentUser = user;
 
-  const userRef = doc(db, 'users', user.uid);
-  const userSnap = await getDoc(userRef);
-  currentProfile = userSnap.exists() ? userSnap.data() : { name: user.email || 'Staff' };
-  userNameEl.textContent = currentProfile.name || user.email || 'Staff';
+  currentUser = user || null;
+  if (currentUser) {
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    currentProfile = userSnap.exists() ? userSnap.data() : { name: currentUser.email || 'Staff' };
+  } else {
+    currentProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User', email: 'access@brewledger.local' };
+  }
 
-  onSnapshot(collection(db, 'restock_tasks'), (snap) => {
+  userNameEl.textContent = currentProfile.name || currentProfile.email || 'Staff';
+
+  if (tasksUnsub) tasksUnsub();
+  tasksUnsub = onSnapshot(collection(db, 'restock_tasks'), (snap) => {
     const tasks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
     renderTasks(tasks);
   });

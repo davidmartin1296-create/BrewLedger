@@ -67,9 +67,10 @@ const listEl = document.getElementById('drinkList');
 const msgEl = document.getElementById('message');
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
+function hasCodeAccess() { return localStorage.getItem('brew_access_granted') === '1'; }
 
 onAuthStateChanged(auth, (user) => {
-  if (!user) { window.location.href = '/login.html'; return; }
+  if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
 
   onSnapshot(collection(db, 'drinks'), (snap) => {
     const drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }))

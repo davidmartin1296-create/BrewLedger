@@ -67,18 +67,33 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
+
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = '/login.html'; return; }
+  if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
 
-  const snap = await getDoc(doc(db, 'users', user.uid));
-  const profile = snap.exists() ? snap.data() : { name: user.email, email: user.email, role: 'staff' };
+  let profile;
+  if (user) {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    profile = snap.exists() ? snap.data() : { name: user.email, email: user.email, role: 'staff' };
+  } else {
+    profile = {
+      name: localStorage.getItem('brew_access_name') || 'Access Code User',
+      email: 'access@brewledger.local',
+      role: 'staff'
+    };
+  }
 
-  document.getElementById('name').textContent = profile.name || user.email;
-  document.getElementById('email').textContent = profile.email || user.email;
+  document.getElementById('name').textContent = profile.name || user?.email || 'Staff';
+  document.getElementById('email').textContent = profile.email || user?.email || 'access@brewledger.local';
   document.getElementById('role').textContent = profile.role || 'staff';
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
+  localStorage.removeItem('brew_access_granted');
+  localStorage.removeItem('brew_access_name');
   await signOut(auth);
   window.location.href = '/welcome.html';
 });
