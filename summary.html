@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brew-Ledger — Night Summary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/app-Brews.png">
+<link rel="apple-touch-icon" href="/images/app-Brews.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brew-Ledger">
+<meta name="theme-color" content="#07050f">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --p:       #a78bfa;
+  --p-l:     #c4b5fd;
+  --p-d:     #7c3aed;
+  --p-glow:  rgba(124,58,237,0.35);
+  --green:   #10b981;
+  --green-l: #34d399;
+  --amber:   #f59e0b;
+  --amber-l: #fbbf24;
+  --red:     #ef4444;
+  --bg:      #07050f;
+  --surface: rgba(20,10,50,0.5);
+  --border:  rgba(167,139,250,0.13);
+  --tab-h:   62px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(160deg, #07050f 0%, #0e0820 55%, #07050f 100%);
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+/* ── Ambient ── */
+.bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.orb { position: absolute; border-radius: 50%; filter: blur(90px); animation: drift 25s ease-in-out infinite; }
+.orb-1 { width: 560px; height: 560px; background: radial-gradient(circle, rgba(109,40,217,0.22) 0%, transparent 65%); top: -120px; left: -140px; }
+.orb-2 { width: 420px; height: 420px; background: radial-gradient(circle, rgba(167,139,250,0.14) 0%, transparent 65%); bottom: 60px; right: -100px; animation-delay: -12s; animation-duration: 30s; }
+.orb-3 { width: 320px; height: 320px; background: radial-gradient(circle, rgba(219,39,119,0.1) 0%, transparent 65%); top: 40%; left: 55%; animation-delay: -6s; animation-duration: 35s; }
+@keyframes drift { 0%,100% { transform: translate(0,0); } 33% { transform: translate(38px,22px); } 66% { transform: translate(-18px,44px); } }
+
+/* ── Hero banner with overlay stats ── */
+.hero-banner {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hero-banner img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 35%;
+  display: block;
+}
+
+.hero-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(7,5,15,0.5) 0%, rgba(7,5,15,0.88) 100%);
+  z-index: 1;
+}
+
+.banner-content {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: max(16px, env(safe-area-inset-top)) 20px 20px;
+}
+
+.banner-brand {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+
+.banner-brand-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--p-d), var(--p));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+  box-shadow: 0 0 12px var(--p-glow);
+}
+
+.banner-brand-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.2px; }
+
+.banner-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; margin-bottom: 4px; }
+
+.banner-date { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
+
+.banner-stats { display: flex; gap: 20px; }
+
+.stat-block { display: flex; flex-direction: column; gap: 2px; }
+
+.stat-num {
+  font-size: 28px; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-num.blue   { color: var(--p-l); }
+.stat-num.amber  { color: var(--amber-l); }
+.stat-num.green  { color: var(--green-l); }
+
+.stat-lbl { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 0.3px; }
+
+.stat-divider { width: 1px; background: rgba(167,139,250,0.18); align-self: stretch; margin: 4px 0; }
+
+/* ── Page content ── */
+.page {
+  position: relative; z-index: 1;
+  max-width: 680px; margin: 0 auto;
+  padding: 20px 16px 16px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* ── Section card ── */
+.section-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(167,139,250,0.09) 0%, rgba(20,10,50,0.55) 60%, rgba(109,40,217,0.07) 100%);
+  backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+
+.section-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 5%, rgba(167,139,250,0.35) 35%, rgba(255,255,255,0.15) 55%, transparent 95%);
+}
+
+.section-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(167,139,250,0.09);
+}
+
+.section-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.3px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+
+.section-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 10px;
+}
+
+.badge-amber { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.22); color: var(--amber-l); }
+.badge-green { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.22); color: var(--green-l); }
+.badge-blue  { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.22); color: var(--p-l); }
+
+/* ── Usage list rows ── */
+.usage-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(167,139,250,0.07);
+}
+.usage-row:last-child { border-bottom: none; }
+
+.usage-name { flex: 1; font-size: 15px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.usage-cat {
+  font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 8px;
+  background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.14);
+  color: rgba(196,181,253,0.55); white-space: nowrap; flex-shrink: 0;
+}
+
+.usage-numbers { display: flex; gap: 12px; flex-shrink: 0; align-items: center; }
+
+.usage-stat { text-align: center; }
+
+.usage-stat-num { font-size: 16px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.usage-stat-lbl { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+
+.num-used     { color: rgba(255,255,255,0.7); }
+.num-replaced { color: var(--p-l); }
+.num-needed   { color: var(--amber-l); }
+.num-done     { color: var(--green-l); }
+
+.usage-divider { width: 1px; height: 28px; background: rgba(167,139,250,0.12); flex-shrink: 0; }
+
+/* ── Shortage list ── */
+.shortage-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(167,139,250,0.07);
+}
+.shortage-row:last-child { border-bottom: none; }
+
+.shortage-icon {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--amber-l);
+}
+
+.shortage-info { flex: 1; min-width: 0; }
+.shortage-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shortage-sub  { font-size: 12px; color: rgba(255,255,255,0.38); }
+
+.shortage-qty {
+  text-align: right; flex-shrink: 0;
+}
+.shortage-qty-num {
+  font-size: 22px; font-weight: 800; line-height: 1;
+  color: var(--amber-l); font-variant-numeric: tabular-nums;
+}
+.shortage-qty-lbl { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── All clear state ── */
+.all-clear {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 16px;
+}
+
+.all-clear-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+  animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.all-clear h3 { font-size: 17px; font-weight: 700; color: var(--green-l); margin-bottom: 4px; }
+.all-clear p  { font-size: 13px; color: rgba(255,255,255,0.38); }
+
+/* ── Empty usage state ── */
+.empty-usage {
+  padding: 32px 16px; text-align: center;
+  color: rgba(255,255,255,0.28); font-size: 14px; line-height: 1.6;
+}
+
+/* ── Reset section ── */
+.reset-section {
+  padding: 0 0 8px;
+}
+
+.reset-card {
+  background: rgba(239,68,68,0.05);
+  border: 1px solid rgba(239,68,68,0.14);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+
+.reset-info strong { display: block; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 2px; }
+.reset-info span   { font-size: 12px; color: rgba(255,255,255,0.35); }
+
+.reset-btn {
+  padding: 10px 18px; border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
+  background: rgba(239,68,68,0.1); color: var(--red);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0; transition: all 0.2s;
+}
+.reset-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
+
+/* ── Advert ── */
+.advert { text-align: center; padding: 8px 16px 8px; }
+.advert img {
+  max-width: 280px; width: 100%; height: auto; display: block; margin: 0 auto;
+  border-radius: 18px;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,250,0.1);
+}
+
+/* ── Tab bar ── */
+.tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  display: flex;
+  background: rgba(7,5,15,0.92);
+  backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; height: var(--tab-h);
+  text-decoration: none; color: rgba(255,255,255,0.3);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
+  transition: color 0.2s; position: relative;
+}
+.tab.active { color: var(--p-l); }
+.tab:hover:not(.active) { color: rgba(255,255,255,0.55); }
+.tab svg { display: block; }
+.tab.active svg { filter: drop-shadow(0 0 7px rgba(167,139,250,0.6)); }
+.tab.active::after {
+  content: '';
+  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  width: 30px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--p), transparent);
+  border-radius: 1px;
+}
+.tab-badge {
+  position: absolute; top: 7px; right: calc(50% - 17px);
+  background: var(--amber); color: #07050f;
+  font-size: 9px; font-weight: 800; min-width: 16px; height: 16px;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  padding: 0 3px; box-shadow: 0 0 8px rgba(245,158,11,0.5);
+}
+
+/* ── Reset modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: flex; align-items: flex-end;
+}
+.modal-sheet {
+  width: 100%;
+  background: linear-gradient(160deg, rgba(30,15,60,0.98) 0%, rgba(15,8,35,0.98) 100%);
+  border: 1px solid rgba(167,139,250,0.18); border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 24px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+.modal-handle { width: 36px; height: 4px; background: rgba(167,139,250,0.2); border-radius: 2px; margin: 0 auto 22px; }
+.modal-sheet h3 { font-size: 19px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+.modal-sheet p  { font-size: 14px; color: rgba(255,255,255,0.44); margin-bottom: 22px; line-height: 1.5; }
+.modal-btns { display: flex; flex-direction: column; gap: 10px; }
+.modal-confirm {
+  width: 100%; padding: 15px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(239,68,68,0.85), rgba(220,38,38,0.85));
+  color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; box-shadow: 0 4px 16px rgba(239,68,68,0.28);
+}
+.modal-confirm:hover { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.modal-cancel {
+  width: 100%; padding: 15px; border: 1px solid rgba(167,139,250,0.14); border-radius: 12px;
+  background: rgba(167,139,250,0.06); color: rgba(255,255,255,0.62);
+  font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s;
+}
+.modal-cancel:hover { background: rgba(167,139,250,0.12); }
+.modal-overlay.fade-in  { animation: mFadeIn 0.2s ease both; }
+.modal-overlay.fade-out { animation: mFadeOut 0.22s ease both; }
+@keyframes mFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mFadeOut { from { opacity: 1; } to { opacity: 0; } }
+.modal-sheet.slide-up   { animation: mSlideUp 0.3s cubic-bezier(0.34,1.2,0.64,1) both; }
+.modal-sheet.slide-down { animation: mSlideDown 0.22s ease both; }
+@keyframes mSlideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes mSlideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+
+.hidden { display: none !important; }
+
+</style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Hero banner with stats overlay -->
+<div class="hero-banner">
+  <img src="/images/Hero-image.png" alt="Brew-Ledger">
+  <div class="banner-content">
+    <div class="banner-brand">
+      <div class="banner-brand-icon">B</div>
+      <span class="banner-brand-name">Brew-Ledger</span>
+    </div>
+    <div class="banner-title">Night Summary</div>
+    <div class="banner-date" id="bannerDate">—</div>
+    <div class="banner-stats">
+      <div class="stat-block">
+        <div class="stat-num blue" id="statUsed">0</div>
+        <div class="stat-lbl">bottles used</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-block">
+        <div class="stat-num" id="statReplaced" style="color:rgba(255,255,255,0.6)">0</div>
+        <div class="stat-lbl">replaced</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-block">
+        <div class="stat-num amber" id="statOutstanding">0</div>
+        <div class="stat-lbl">outstanding</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Page body -->
+<div class="page">
+
+  <!-- Tonight's Usage -->
+  <div class="section-card">
+    <div class="section-head">
+      <span class="section-title">Tonight's Usage</span>
+      <span class="section-badge badge-blue" id="usageCount">0 drinks</span>
+    </div>
+    <div id="usageList"></div>
+  </div>
+
+  <!-- Shortage Dashboard -->
+  <div class="section-card">
+    <div class="section-head">
+      <span class="section-title">Shortage Dashboard</span>
+      <span class="section-badge" id="shortageBadge">—</span>
+    </div>
+    <div id="shortageList"></div>
+  </div>
+
+  <!-- Reset night -->
+  <div class="reset-section">
+    <div class="reset-card">
+      <div class="reset-info">
+        <strong>Reset Night Session</strong>
+        <span>Clear all counts for the next shift</span>
+      </div>
+      <button class="reset-btn" onclick="openModal()">Reset Night</button>
+    </div>
+  </div>
+
+  <!-- Advert -->
+  <div class="advert">
+    <img src="/images/Brew-ledger-advert.png" alt="Take Charge of Your Bar Inventory — Brew-Ledger">
+  </div>
+
+</div>
+
+<!-- Reset modal -->
+<div class="modal-overlay hidden" id="resetModal" onclick="handleOverlayTap(event)">
+  <div class="modal-sheet" id="modalSheet">
+    <div class="modal-handle"></div>
+    <h3>Reset Night Session</h3>
+    <p>Clear all "Used" and "Replaced" counts and start a fresh session?</p>
+    <div class="modal-btns">
+      <button class="modal-confirm" onclick="confirmReset()">Yes, Reset Night</button>
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom tab bar -->
+<nav class="tab-bar">
+  <a class="tab" href="index.html">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+    Night
+  </a>
+  <a class="tab active" href="summary.html">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    Summary
+    <span class="tab-badge hidden" id="summaryBadge"></span>
+  </a>
+  <a class="tab" href="settings.html">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    Settings
+  </a>
+</nav>
+
+<script>
+
+let inventoryData = [];
+let nightSession  = { startedAt: '', items: {} };
+
+function loadData() {
+  const inv = localStorage.getItem('inventoryData');
+  if (inv) try { inventoryData = JSON.parse(inv); } catch(e) { inventoryData = []; }
+  if (!Array.isArray(inventoryData)) inventoryData = [];
+
+  const ns = localStorage.getItem('nightSession');
+  if (ns) try { nightSession = JSON.parse(ns); } catch(e) {}
+  if (!nightSession || typeof nightSession !== 'object') nightSession = { startedAt: '', items: {} };
+  if (!nightSession.items) nightSession.items = {};
+}
+
+function saveSession() {
+  localStorage.setItem('nightSession', JSON.stringify(nightSession));
+}
+
+function getItem(name) {
+  return nightSession.items[name] || { used: 0, replaced: 0 };
+}
+
+function renderPage() {
+  // Compute aggregates
+  let totalUsed = 0, totalReplaced = 0, totalOutstanding = 0;
+  const usedDrinks      = [];
+  const shortageDrinks  = [];
+
+  inventoryData.forEach(drink => {
+    const it          = getItem(drink.name);
+    const outstanding = Math.max(0, it.used - it.replaced);
+    totalUsed        += it.used;
+    totalReplaced    += it.replaced;
+    totalOutstanding += outstanding;
+
+    if (it.used > 0) {
+      usedDrinks.push({ drink, used: it.used, replaced: it.replaced, outstanding });
+    }
+    if (outstanding > 0) {
+      shortageDrinks.push({ drink, outstanding });
+    }
+  });
+
+  // Sort used drinks by used count desc
+  usedDrinks.sort((a, b) => b.used - a.used);
+  // Sort shortages by outstanding desc
+  shortageDrinks.sort((a, b) => b.outstanding - a.outstanding);
+
+  // Banner stats
+  document.getElementById('bannerDate').textContent     = nightSession.startedAt || '—';
+  document.getElementById('statUsed').textContent        = totalUsed;
+  document.getElementById('statReplaced').textContent    = totalReplaced;
+  document.getElementById('statOutstanding').textContent = totalOutstanding;
+
+  // Colour outstanding stat dynamically
+  const outEl = document.getElementById('statOutstanding');
+  outEl.className = 'stat-num ' + (totalOutstanding > 0 ? 'amber' : 'green');
+
+  // Usage count badge
+  const n = usedDrinks.length;
+  document.getElementById('usageCount').textContent = n === 0 ? 'nothing yet' : `${n} drink${n === 1 ? '' : 's'}`;
+  document.getElementById('usageCount').className   = 'section-badge ' + (n > 0 ? 'badge-blue' : 'badge-amber');
+
+  // Render usage list
+  const usageList = document.getElementById('usageList');
+  if (usedDrinks.length === 0) {
+    usageList.innerHTML = `<div class="empty-usage">Nothing recorded yet.<br>Head to Night tracking to start logging.</div>`;
+  } else {
+    usageList.innerHTML = usedDrinks.map(({ drink, used, replaced, outstanding }) => {
+      const doneClass = outstanding === 0 ? 'num-done' : 'num-needed';
+      return `
+        <div class="usage-row">
+          <div class="usage-name">${escHtml(drink.name)}</div>
+          <span class="usage-cat">${escHtml(drink.category || 'Other')}</span>
+          <div class="usage-numbers">
+            <div class="usage-stat">
+              <div class="usage-stat-num num-used">${used}</div>
+              <div class="usage-stat-lbl">Used</div>
+            </div>
+            <div class="usage-divider"></div>
+            <div class="usage-stat">
+              <div class="usage-stat-num num-replaced">${replaced}</div>
+              <div class="usage-stat-lbl">Back</div>
+            </div>
+            <div class="usage-divider"></div>
+            <div class="usage-stat">
+              <div class="usage-stat-num ${doneClass}">${outstanding}</div>
+              <div class="usage-stat-lbl">Left</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Render shortage list
+  const shortageList  = document.getElementById('shortageList');
+  const shortageBadge = document.getElementById('shortageBadge');
+
+  if (shortageDrinks.length === 0) {
+    shortageBadge.textContent = 'All clear';
+    shortageBadge.className   = 'section-badge badge-green';
+    shortageList.innerHTML = `
+      <div class="all-clear">
+        <div class="all-clear-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h3>No Shortages</h3>
+        <p>Everything has been restocked or nothing used yet.</p>
+      </div>`;
+  } else {
+    shortageBadge.textContent = `${shortageDrinks.length} item${shortageDrinks.length === 1 ? '' : 's'}`;
+    shortageBadge.className   = 'section-badge badge-amber';
+    shortageList.innerHTML = shortageDrinks.map(({ drink, outstanding }) => `
+      <div class="shortage-row">
+        <div class="shortage-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="shortage-info">
+          <div class="shortage-name">${escHtml(drink.name)}</div>
+          <div class="shortage-sub">${escHtml(drink.category || 'Other')} · Reorder required</div>
+        </div>
+        <div class="shortage-qty">
+          <div class="shortage-qty-num">${outstanding}</div>
+          <div class="shortage-qty-lbl">needed</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Summary tab badge
+  const badge = document.getElementById('summaryBadge');
+  if (badge) { badge.textContent = shortageDrinks.length; badge.classList.toggle('hidden', shortageDrinks.length === 0); }
+}
+
+// ── Modal ──
+
+function openModal() {
+  const overlay = document.getElementById('resetModal');
+  const sheet   = document.getElementById('modalSheet');
+  overlay.classList.remove('hidden');
+  overlay.className = 'modal-overlay fade-in';
+  sheet.className   = 'modal-sheet slide-up';
+}
+
+function closeModal() {
+  const overlay = document.getElementById('resetModal');
+  const sheet   = document.getElementById('modalSheet');
+  sheet.className   = 'modal-sheet slide-down';
+  overlay.className = 'modal-overlay fade-out';
+  setTimeout(() => overlay.classList.add('hidden'), 230);
+}
+
+function handleOverlayTap(e) {
+  if (e.target === document.getElementById('resetModal')) closeModal();
+}
+
+function confirmReset() {
+  nightSession.items     = {};
+  nightSession.startedAt = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  saveSession();
+  closeModal();
+  setTimeout(() => { loadData(); renderPage(); }, 240);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { loadData(); renderPage(); }
+});
+
+loadData();
+renderPage();
+
+</script>
+</body>
+</html>

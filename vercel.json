@@ -3,14 +3,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.html",
+      "src": "**/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "index.html"
-    }
+    { "src": "/images/(.*)", "dest": "/public/images/$1" },
+    { "src": "/manifest.json", "dest": "/public/manifest.json" },
+    { "src": "/settings.html", "dest": "/settings.html" },
+    { "src": "/summary.html",  "dest": "/summary.html" },
+    { "src": "/(.*)",          "dest": "/index.html" }
   ]
 }
