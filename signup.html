@@ -78,10 +78,10 @@ function hasCodeAccess() {
 }
 
 if (hasCodeAccess()) {
-  window.location.href = '/index.html';
+  window.location.href = '/dashboard.html';
 }
 
-onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/index.html'; });
+onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/dashboard.html'; });
 
 quickBtn.addEventListener('click', () => {
   const code = document.getElementById('quickCode').value.trim();
@@ -90,7 +90,7 @@ quickBtn.addEventListener('click', () => {
     return;
   }
   grantCodeAccess('Access Code User');
-  window.location.href = '/index.html';
+  window.location.href = '/dashboard.html';
 });
 
 form.addEventListener('submit', async (e) => {
@@ -118,7 +118,7 @@ form.addEventListener('submit', async (e) => {
       createdAt: new Date().toISOString()
     });
     grantCodeAccess(name || email);
-    window.location.href = '/index.html';
+    window.location.href = '/dashboard.html';
   } catch (err) {
     msg.textContent = err?.message || 'Sign up failed.';
   } finally {

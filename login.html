@@ -76,10 +76,10 @@ function hasCodeAccess() {
 }
 
 if (hasCodeAccess()) {
-  window.location.href = '/index.html';
+  window.location.href = '/dashboard.html';
 }
 
-onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/index.html'; });
+onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/dashboard.html'; });
 
 accessBtn.addEventListener('click', () => {
   const code = document.getElementById('accessCode').value.trim();
@@ -88,7 +88,7 @@ accessBtn.addEventListener('click', () => {
     return;
   }
   grantCodeAccess('Access Code User');
-  window.location.href = '/index.html';
+  window.location.href = '/dashboard.html';
 });
 
 form.addEventListener('submit', async (e) => {
@@ -98,7 +98,7 @@ form.addEventListener('submit', async (e) => {
   try {
     await signInWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value);
     grantCodeAccess(document.getElementById('email').value.trim());
-    window.location.href = '/index.html';
+    window.location.href = '/dashboard.html';
   } catch (err) {
     msg.textContent = err?.message || 'Login failed.';
   } finally {
