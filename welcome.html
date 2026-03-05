@@ -23,6 +23,14 @@ body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;bac
 .btn{height:48px;border-radius:12px;text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
 .btn.primary{background:linear-gradient(135deg,#9b5f2b,#b87333);border:1px solid #d49a5d;color:#fff}
 .btn.ghost{border:1px solid rgba(184,115,51,.46);background:rgba(184,115,51,.1);color:#f7d8b8}
+.quick{margin-top:16px;padding-top:14px;border-top:1px solid rgba(212,154,93,.25)}
+.quick-title{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#e7ceb5;margin-bottom:8px}
+.quick-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.field{height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#1f1b17;color:#fff;padding:0 11px;text-transform:uppercase;letter-spacing:.6px}
+.field:focus{outline:none;border-color:rgba(184,115,51,.65)}
+.btn.quick-btn{height:44px;padding:0 14px;border:1px solid rgba(184,115,51,.46);background:rgba(184,115,51,.12);color:#f7d8b8;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45);color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -38,7 +46,66 @@ body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;bac
       <a class="btn primary" href="/login.html">Log In</a>
       <a class="btn ghost" href="/signup.html">Create New Account</a>
     </div>
+    <div class="quick">
+      <div class="quick-title">Quick Staff Access</div>
+      <div class="quick-row">
+        <input class="field" id="quickCode" type="text" placeholder="BREWS2026!" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="text">
+        <button class="btn quick-btn" id="quickBtn" type="button">Enter Dashboard</button>
+      </div>
+    </div>
   </section>
 </main>
+<div class="toast" id="toast"></div>
+<script>
+const ACCESS_CODE = 'BREWS2026!';
+const quickCodeInput = document.getElementById('quickCode');
+const quickBtn = document.getElementById('quickBtn');
+const toast = document.getElementById('toast');
+let toastTimer = null;
+
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
+
+function grantCodeAccess(name = 'Bar Staff') {
+  localStorage.setItem('brew_access_granted', '1');
+  localStorage.setItem('brew_access_name', name);
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function submitQuickAccess() {
+  const code = quickCodeInput.value.trim().toUpperCase();
+  quickCodeInput.value = code;
+  if (code !== ACCESS_CODE) {
+    showToast('That access code is not correct.');
+    return;
+  }
+  grantCodeAccess('Access Code User');
+  window.location.href = '/dashboard.html';
+}
+
+if (hasCodeAccess()) {
+  window.location.href = '/dashboard.html';
+}
+
+quickCodeInput.addEventListener('input', () => {
+  quickCodeInput.value = quickCodeInput.value.toUpperCase();
+});
+
+quickCodeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitQuickAccess();
+  }
+});
+
+quickBtn.addEventListener('click', submitQuickAccess);
+</script>
 </body>
 </html>
