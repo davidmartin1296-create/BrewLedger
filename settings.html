@@ -17,6 +17,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .logo img{width:100%;height:100%;object-fit:contain}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
 .main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
+.hero{border-radius:16px;min-height:120px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.36),rgba(10,8,6,.84)),url('/images/app-Brews.png') center/cover no-repeat;padding:14px;display:flex;align-items:flex-end}
+.hero h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hero p{margin-top:4px;font-size:12px;color:rgba(245,243,239,.82)}
 .card{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
 .k{font-size:11px;color:rgba(245,243,239,.58);text-transform:uppercase;letter-spacing:.5px}
 .v{font-size:16px;font-weight:700;margin-top:4px}
@@ -35,6 +38,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
   <div class="brand">Settings</div>
 </header>
 <main class="main">
+  <section class="hero">
+    <div>
+      <h1>Staff Profile</h1>
+      <p>Quick account details and session controls for bar teams.</p>
+    </div>
+  </section>
   <section class="card">
     <div class="k">Name</div>
     <div class="v" id="name">—</div>
@@ -63,38 +72,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { auth, db } from "./firebase.js";
-
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
-
-  let profile;
-  if (user) {
-    const snap = await getDoc(doc(db, 'users', user.uid));
-    profile = snap.exists() ? snap.data() : { name: user.email, email: user.email, role: 'staff' };
-  } else {
-    profile = {
-      name: localStorage.getItem('brew_access_name') || 'Access Code User',
-      email: 'access@brewledger.local',
-      role: 'staff'
-    };
-  }
-
-  document.getElementById('name').textContent = profile.name || user?.email || 'Staff';
-  document.getElementById('email').textContent = profile.email || user?.email || 'access@brewledger.local';
-  document.getElementById('role').textContent = profile.role || 'staff';
-});
+if (!hasCodeAccess()) {
+  window.location.href = '/login.html';
+} else {
+  const name = localStorage.getItem('brew_access_name') || 'Access Code User';
+  document.getElementById('name').textContent = name;
+  document.getElementById('email').textContent = 'access@brewledger.local';
+  document.getElementById('role').textContent = 'staff';
+}
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   localStorage.removeItem('brew_access_granted');
   localStorage.removeItem('brew_access_name');
-  await signOut(auth);
   window.location.href = '/welcome.html';
 });
 </script>

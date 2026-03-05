@@ -18,6 +18,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
 .user{margin-left:auto;font-size:12px;color:rgba(245,243,239,.65)}
 .main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
+.hero{border-radius:16px;min-height:140px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.35),rgba(10,8,6,.86)),url('/images/app-Brews.png') center/cover no-repeat;padding:14px;display:flex;align-items:flex-end}
+.hero h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hero p{margin-top:4px;font-size:12px;color:rgba(245,243,239,.82)}
 .panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
 .panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
 .panel p{font-size:12px;color:rgba(245,243,239,.66);line-height:1.5}
@@ -60,6 +63,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </header>
 
 <main class="main">
+  <section class="hero">
+    <div>
+      <h1>Tonight's Restock Board</h1>
+      <p>Track what is missing, what is replaced, and what still needs action.</p>
+    </div>
+  </section>
   <section class="panel">
     <h2>Outstanding Restock Tasks</h2>
     <p>Live tasks shared across the team. Replace bottles and log shortage notes in real time.</p>
@@ -77,13 +86,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, getDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { auth, db } from "./firebase.js";
+import { collection, doc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { db } from "./firebase.js";
 
 const taskListEl = document.getElementById('taskList');
 const userNameEl = document.getElementById('userName');
-let currentUser = null;
 let currentProfile = null;
 let tasksUnsub = null;
 
@@ -140,8 +147,8 @@ async function addComment(taskId) {
     const comments = Array.isArray(t.comments) ? t.comments.slice() : [];
     comments.push({
       text: text.trim(),
-      authorName: currentProfile?.name || currentUser?.email || 'Staff',
-      authorId: currentUser?.uid || null,
+      authorName: currentProfile?.name || 'Access Code User',
+      authorId: null,
       createdAt: new Date().toISOString()
     });
     tx.update(ref, { comments, updatedAt: new Date().toISOString() });
@@ -223,21 +230,10 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user && !hasCodeAccess()) {
-    window.location.href = '/login.html';
-    return;
-  }
-
-  currentUser = user || null;
-  if (currentUser) {
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    currentProfile = userSnap.exists() ? userSnap.data() : { name: currentUser.email || 'Staff' };
-  } else {
-    currentProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User', email: 'access@brewledger.local' };
-  }
-
+if (!hasCodeAccess()) {
+  window.location.href = '/login.html';
+} else {
+  currentProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User', email: 'access@brewledger.local' };
   userNameEl.textContent = currentProfile.name || currentProfile.email || 'Staff';
 
   if (tasksUnsub) tasksUnsub();
@@ -245,9 +241,9 @@ onAuthStateChanged(auth, async (user) => {
     const tasks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
     renderTasks(tasks);
   }, () => {
-    taskListEl.innerHTML = '<div class="panel empty">Access code accepted. Live task data requires Firebase sign-in permissions.</div>';
+    taskListEl.innerHTML = '<div class="panel empty">Could not load tasks right now.</div>';
   });
-});
+}
 </script>
 </body>
 </html>

@@ -17,6 +17,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .logo img{width:100%;height:100%;object-fit:contain}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
 .main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
+.hero{border-radius:16px;min-height:130px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.36),rgba(10,8,6,.84)),url('/images/Hero-image.png') center/cover no-repeat;padding:14px;display:flex;align-items:flex-end}
+.hero h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hero p{margin-top:4px;font-size:12px;color:rgba(245,243,239,.82)}
 .panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
 .panel h2{font-size:15px;font-weight:800;margin-bottom:6px}
 .panel p{font-size:13px;color:rgba(245,243,239,.7);line-height:1.55}
@@ -25,6 +28,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .suggestions{display:grid;gap:8px;margin-top:10px}
 .suggestion{height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#ffe6cf;font-size:13px;font-weight:600;padding:0 12px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .suggestion-cat{font-size:10px;color:rgba(245,243,239,.7);background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.catalog{margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:10px}
+.catalog-title{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:rgba(245,243,239,.7);margin-bottom:8px}
+.catalog-group{margin-bottom:10px}
+.catalog-group-name{font-size:12px;font-weight:700;color:#f6d7b6;margin-bottom:6px}
+.catalog-items{display:grid;gap:6px}
+.catalog-item{height:38px;border-radius:9px;border:1px solid rgba(184,115,51,.28);background:rgba(255,255,255,.02);color:#f5f3ef;font-size:12px;font-weight:600;padding:0 10px;text-align:left;display:flex;align-items:center}
+.catalog-empty{font-size:12px;color:rgba(245,243,239,.6);padding:8px 2px}
 .selected{margin-top:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px}
 .title{font-size:16px;font-weight:800;letter-spacing:-.2px}
 .help{font-size:12px;color:rgba(245,243,239,.64);margin-top:4px}
@@ -48,11 +58,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </header>
 
 <main class="main">
+  <section class="hero">
+    <div>
+      <h1>Bar Walk-Through</h1>
+      <p>Pick from the drink list and log shortages quickly while moving around the bar.</p>
+    </div>
+  </section>
   <section class="panel">
     <h2>Bar Walk-Through</h2>
     <p>Walk along the bar and check the fridges or shelves. Start typing the name of any drink that needs replacing.</p>
     <input id="searchInput" class="search" placeholder="Search drink or bottle" autocomplete="off">
     <div id="suggestions" class="suggestions"></div>
+    <div class="catalog">
+      <div class="catalog-title">Full Drink List (tap to select)</div>
+      <div id="catalogList"></div>
+    </div>
 
     <div id="selectedBox" class="selected" style="display:none">
       <div class="title" id="selectedDrink">—</div>
@@ -82,15 +102,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 </nav>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { addDoc, collection, getDocs, onSnapshot, query, where, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { auth, db } from "./firebase.js";
-import { getAllMasterDrinks } from "./data/barStockList.js";
+import { db } from "./firebase.js";
+import { barStockList, getAllMasterDrinks } from "./data/barStockList.js";
 
 let drinks = [];
 let selectedDrink = null;
 let selectedQty = 1;
-let userProfile = null;
+let userProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User' };
 const masterDrinks = getAllMasterDrinks();
 
 function hasCodeAccess() {
@@ -99,6 +118,7 @@ function hasCodeAccess() {
 
 const searchInput = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('suggestions');
+const catalogListEl = document.getElementById('catalogList');
 const selectedBox = document.getElementById('selectedBox');
 const selectedDrinkEl = document.getElementById('selectedDrink');
 const qtyInput = document.getElementById('qtyInput');
@@ -110,13 +130,48 @@ function esc(s) {
 
 function renderSuggestions(queryText) {
   const q = queryText.trim().toLowerCase();
-  if (!q) { suggestionsEl.innerHTML = ''; return; }
-  const matches = drinks.filter((d) => (d.name || '').toLowerCase().includes(q)).slice(0, 8);
+  const pool = q ? drinks.filter((d) => (d.name || '').toLowerCase().includes(q)) : drinks;
+  const matches = pool.slice(0, 8);
   if (!matches.length) {
     suggestionsEl.innerHTML = '<div style="font-size:12px;color:rgba(245,243,239,.6);padding:8px 2px">No matching drinks found.</div>';
     return;
   }
   suggestionsEl.innerHTML = matches.map((d) => `<button class="suggestion" data-drink-id="${d._id}"><span>${esc(d.name)}</span><span class="suggestion-cat">${esc(d.category || 'Other')}</span></button>`).join('');
+}
+
+function renderCatalog(queryText) {
+  const q = queryText.trim().toLowerCase();
+  const byCategory = new Map();
+
+  drinks.forEach((drink) => {
+    const name = drink.name || '';
+    if (q && !name.toLowerCase().includes(q)) return;
+    const cat = drink.category || 'Other';
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat).push(drink);
+  });
+
+  const categoryOrder = [
+    ...barStockList.map((group) => group.category),
+    ...Array.from(byCategory.keys()).filter((cat) => !barStockList.some((group) => group.category === cat)).sort()
+  ];
+
+  const html = categoryOrder
+    .map((category) => {
+      const items = (byCategory.get(category) || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (!items.length) return '';
+      return `
+        <div class="catalog-group">
+          <div class="catalog-group-name">${esc(category)}</div>
+          <div class="catalog-items">
+            ${items.map((d) => `<button class="catalog-item" data-drink-id="${d._id}">${esc(d.name || '')}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  catalogListEl.innerHTML = html || '<div class="catalog-empty">No drinks found for this search.</div>';
 }
 
 function mergeDrinksWithMaster(dbDrinks) {
@@ -176,8 +231,8 @@ async function saveTask() {
       replacedQty: 0,
       outstandingQty: qty,
       comments: [],
-      createdBy: auth.currentUser?.uid || null,
-      createdByName: userProfile?.name || auth.currentUser?.email || localStorage.getItem('brew_access_name') || 'Staff',
+      createdBy: null,
+      createdByName: userProfile?.name || localStorage.getItem('brew_access_name') || 'Access Code User',
       createdAt: new Date().toISOString(),
       status: 'active'
     });
@@ -203,27 +258,23 @@ document.addEventListener('click', async (e) => {
 });
 
 searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
+searchInput.addEventListener('input', () => renderCatalog(searchInput.value));
 document.getElementById('saveBtn').addEventListener('click', saveTask);
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user && !hasCodeAccess()) { window.location.href = '/login.html'; return; }
-
-  if (user) {
-    const userDocs = await getDocs(query(collection(db, 'users'), where('email', '==', user.email)));
-    userProfile = userDocs.empty ? { name: user.email } : userDocs.docs[0].data();
-  } else {
-    userProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User' };
-  }
-
+if (!hasCodeAccess()) {
+  window.location.href = '/login.html';
+} else {
   onSnapshot(collection(db, 'drinks'), (snap) => {
     const dbDrinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
     drinks = mergeDrinksWithMaster(dbDrinks);
     renderSuggestions(searchInput.value);
+    renderCatalog(searchInput.value);
   }, () => {
     drinks = masterDrinks.map((d, i) => ({ _id: `master-${i}`, ...d }));
     renderSuggestions(searchInput.value);
+    renderCatalog(searchInput.value);
   });
-});
+}
 </script>
 </body>
 </html>
