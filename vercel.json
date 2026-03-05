@@ -8,10 +8,16 @@
     }
   ],
   "routes": [
-    { "src": "/images/(.*)", "dest": "/public/images/$1" },
-    { "src": "/manifest.json", "dest": "/public/manifest.json" },
-    { "src": "/settings.html", "dest": "/settings.html" },
-    { "src": "/summary.html",  "dest": "/summary.html" },
-    { "src": "/(.*)",          "dest": "/index.html" }
+    { "src": "/images/(.*)",     "dest": "/public/images/$1" },
+    { "src": "/manifest.json",   "dest": "/public/manifest.json" },
+    { "src": "/welcome.html",    "dest": "/welcome.html" },
+    { "src": "/login.html",      "dest": "/login.html" },
+    { "src": "/signup.html",     "dest": "/signup.html" },
+    { "src": "/index.html",      "dest": "/index.html" },
+    { "src": "/record.html",     "dest": "/record.html" },
+    { "src": "/drinks.html",     "dest": "/drinks.html" },
+    { "src": "/settings.html",   "dest": "/settings.html" },
+    { "src": "/summary.html",    "dest": "/summary.html" },
+    { "src": "/(.*)",            "dest": "/welcome.html" }
   ]
 }

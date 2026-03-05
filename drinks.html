@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brew-Ledger — Drinks List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
+<meta name="theme-color" content="#12100e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;--copper:#b87333}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,var(--bg) 45%,#0e0c0a 100%);color:#f5f3ef;min-height:100vh;padding-bottom:92px}
+.header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
+.logo img{width:100%;height:100%;object-fit:contain}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
+.card{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
+.field{height:44px;width:100%;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;font-size:14px;margin-bottom:9px}
+.grid{display:grid;grid-template-columns:1fr 110px;gap:8px}
+.btn{height:44px;border-radius:10px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+.list{display:grid;gap:8px}
+.item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:10px;display:flex;align-items:center;gap:8px}
+.item .name{flex:1;font-size:14px;font-weight:700}
+.item .cat{font-size:11px;color:rgba(245,243,239,.62)}
+.item button{height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.14);color:#fecaca;font-size:12px;font-weight:700}
+.msg{margin-top:8px;font-size:12px;min-height:16px;color:#86efac}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
+.nav a{height:60px;text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.nav a.active{color:#d49a5d}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
+  <div class="brand">Drinks List</div>
+</header>
+<main class="main">
+  <section class="card">
+    <div class="grid">
+      <input id="drinkName" class="field" placeholder="Drink name">
+      <input id="drinkCategory" class="field" placeholder="Category">
+    </div>
+    <button id="addBtn" class="btn">Add Drink</button>
+    <div id="message" class="msg"></div>
+  </section>
+  <section class="card list" id="drinkList"></section>
+</main>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/index.html">Dashboard</a>
+    <a href="/record.html">Record Inventory</a>
+    <a class="active" href="/drinks.html">Drinks List</a>
+    <a href="/settings.html">Settings</a>
+  </div>
+</nav>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { addDoc, collection, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { auth, db } from "./firebase.js";
+
+const listEl = document.getElementById('drinkList');
+const msgEl = document.getElementById('message');
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) { window.location.href = '/login.html'; return; }
+
+  onSnapshot(collection(db, 'drinks'), (snap) => {
+    const drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (!drinks.length) {
+      listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.62)">No drinks yet.</div>';
+      return;
+    }
+
+    listEl.innerHTML = drinks.map((d) => `
+      <div class="item">
+        <div class="name">${esc(d.name || '')}<div class="cat">${esc(d.category || 'Other')}</div></div>
+        <button data-del="${d._id}">Delete</button>
+      </div>
+    `).join('');
+  });
+});
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const name = document.getElementById('drinkName').value.trim();
+  const category = document.getElementById('drinkCategory').value.trim() || 'Other';
+  if (!name) return;
+  await addDoc(collection(db, 'drinks'), { name, category, createdAt: new Date().toISOString() });
+  document.getElementById('drinkName').value = '';
+  document.getElementById('drinkCategory').value = '';
+  msgEl.textContent = 'Drink added.';
+});
+
+document.addEventListener('click', async (e) => {
+  const del = e.target.closest('[data-del]');
+  if (!del) return;
+  if (!window.confirm('Delete this drink?')) return;
+  await deleteDoc(doc(db, 'drinks', del.getAttribute('data-del')));
+});
+</script>
+</body>
+</html>

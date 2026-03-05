@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/images/app-Brews.png",
+      "src": "/images/B-Logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

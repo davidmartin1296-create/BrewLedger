@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Welcome — Brew-Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
+<meta name="theme-color" content="#12100e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,#12100e 45%,#0e0c0a 100%)}
+.page{max-width:560px;margin:0 auto;min-height:100vh;padding:max(24px,env(safe-area-inset-top)) 20px 24px;display:flex;align-items:center}
+.card{width:100%;background:linear-gradient(145deg,rgba(184,115,51,.12),rgba(28,25,22,.94));border:1px solid rgba(184,115,51,.34);border-radius:22px;padding:24px;box-shadow:0 20px 46px rgba(0,0,0,.42)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo{width:40px;height:40px;border-radius:11px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.3),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
+.logo img{width:100%;height:100%;object-fit:contain}
+.name{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.subtitle{font-size:14px;color:#e7ceb5;margin-bottom:14px}
+.desc{font-size:14px;line-height:1.6;color:rgba(245,243,239,.82);margin-bottom:18px}
+.btns{display:grid;gap:10px}
+.btn{height:48px;border-radius:12px;text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.btn.primary{background:linear-gradient(135deg,#9b5f2b,#b87333);border:1px solid #d49a5d;color:#fff}
+.btn.ghost{border:1px solid rgba(184,115,51,.46);background:rgba(184,115,51,.1);color:#f7d8b8}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="card">
+    <div class="brand">
+      <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
+      <div class="name">BREW-LEDGER</div>
+    </div>
+    <div class="subtitle">Smart bar restock tracking</div>
+    <p class="desc">Brew-Ledger helps bar teams quickly record drinks that need restocking and track what still needs to be replaced from storage.</p>
+    <div class="btns">
+      <a class="btn primary" href="/login.html">Log In</a>
+      <a class="btn ghost" href="/signup.html">Create New Account</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>

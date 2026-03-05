@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brew-Ledger — Record Inventory</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
+<meta name="theme-color" content="#12100e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;--copper:#b87333;--green:#22c55e;--amber:#f59e0b}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,var(--bg) 45%,#0e0c0a 100%);color:#f5f3ef;min-height:100vh;padding-bottom:92px}
+.header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
+.logo img{width:100%;height:100%;object-fit:contain}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
+.panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
+.panel h2{font-size:15px;font-weight:800;margin-bottom:6px}
+.panel p{font-size:13px;color:rgba(245,243,239,.7);line-height:1.55}
+.search{width:100%;height:46px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;font-size:14px}
+.search:focus{outline:none;border-color:rgba(184,115,51,.65)}
+.suggestions{display:grid;gap:8px;margin-top:10px}
+.suggestion{height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#ffe6cf;font-size:13px;font-weight:600;padding:0 12px;text-align:left}
+.selected{margin-top:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px}
+.title{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.help{font-size:12px;color:rgba(245,243,239,.64);margin-top:4px}
+.qty-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.qty-btn{height:40px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#ffd9b8;font-size:14px;font-weight:700}
+.qty-btn.active{background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;border-color:#da9a5c}
+.row{display:flex;gap:8px;margin-top:10px}
+.input{flex:1;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;padding:0 10px}
+.save{height:44px;width:100%;margin-top:12px;border-radius:11px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800}
+.msg{margin-top:9px;min-height:16px;font-size:12px;color:#86efac}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
+.nav a{height:60px;text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.nav a.active{color:#d49a5d}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
+  <div class="brand">Record Inventory</div>
+</header>
+
+<main class="main">
+  <section class="panel">
+    <h2>Bar Walk-Through</h2>
+    <p>Walk along the bar and check the fridges or shelves. Start typing the name of any drink that needs replacing.</p>
+    <input id="searchInput" class="search" placeholder="Search drink or bottle" autocomplete="off">
+    <div id="suggestions" class="suggestions"></div>
+
+    <div id="selectedBox" class="selected" style="display:none">
+      <div class="title" id="selectedDrink">—</div>
+      <div class="help">How many bottles need replacing at the bar?</div>
+      <div class="qty-grid">
+        <button class="qty-btn" data-qty="1">+1</button>
+        <button class="qty-btn" data-qty="2">+2</button>
+        <button class="qty-btn" data-qty="3">+3</button>
+        <button class="qty-btn" data-qty="5">+5</button>
+      </div>
+      <div class="row">
+        <input id="qtyInput" class="input" type="number" min="1" placeholder="Custom quantity">
+      </div>
+      <button id="saveBtn" class="save">Save Restock Task</button>
+      <div id="message" class="msg"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/index.html">Dashboard</a>
+    <a class="active" href="/record.html">Record Inventory</a>
+    <a href="/drinks.html">Drinks List</a>
+    <a href="/settings.html">Settings</a>
+  </div>
+</nav>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { addDoc, collection, getDocs, onSnapshot, query, where, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { auth, db } from "./firebase.js";
+
+let drinks = [];
+let selectedDrink = null;
+let selectedQty = 1;
+let userProfile = null;
+
+const searchInput = document.getElementById('searchInput');
+const suggestionsEl = document.getElementById('suggestions');
+const selectedBox = document.getElementById('selectedBox');
+const selectedDrinkEl = document.getElementById('selectedDrink');
+const qtyInput = document.getElementById('qtyInput');
+const messageEl = document.getElementById('message');
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+}
+
+function renderSuggestions(queryText) {
+  const q = queryText.trim().toLowerCase();
+  if (!q) { suggestionsEl.innerHTML = ''; return; }
+  const matches = drinks.filter((d) => (d.name || '').toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) {
+    suggestionsEl.innerHTML = '<div style="font-size:12px;color:rgba(245,243,239,.6);padding:8px 2px">No matching drinks found.</div>';
+    return;
+  }
+  suggestionsEl.innerHTML = matches.map((d) => `<button class="suggestion" data-drink-id="${d._id}">${esc(d.name)}</button>`).join('');
+}
+
+function pickDrink(drink) {
+  selectedDrink = drink;
+  selectedQty = 1;
+  selectedDrinkEl.textContent = (drink.name || '').toUpperCase();
+  selectedBox.style.display = 'block';
+  qtyInput.value = '';
+  messageEl.textContent = '';
+  document.querySelectorAll('.qty-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-qty') === '1'));
+}
+
+async function saveTask() {
+  if (!selectedDrink) return;
+  const custom = Number(qtyInput.value || 0);
+  const qty = custom > 0 ? custom : selectedQty;
+  if (!qty || qty < 1) return;
+
+  const taskQ = query(collection(db, 'restock_tasks'), where('drinkName', '==', selectedDrink.name), where('status', '==', 'active'));
+  const existing = await getDocs(taskQ);
+
+  if (!existing.empty) {
+    const ref = doc(db, 'restock_tasks', existing.docs[0].id);
+    const prev = existing.docs[0].data();
+    const replaced = Number(prev.replacedQty || 0);
+    const nextNeeded = Number(prev.neededQty || 0) + qty;
+    await updateDoc(ref, {
+      neededQty: increment(qty),
+      outstandingQty: Math.max(0, nextNeeded - replaced),
+      updatedAt: new Date().toISOString()
+    });
+    messageEl.textContent = `${selectedDrink.name}: added ${qty} bottles to existing task.`;
+  } else {
+    await addDoc(collection(db, 'restock_tasks'), {
+      drinkName: selectedDrink.name,
+      drinkId: selectedDrink._id,
+      neededQty: qty,
+      replacedQty: 0,
+      outstandingQty: qty,
+      comments: [],
+      createdBy: auth.currentUser.uid,
+      createdByName: userProfile?.name || auth.currentUser.email || 'Staff',
+      createdAt: new Date().toISOString(),
+      status: 'active'
+    });
+    messageEl.textContent = `${selectedDrink.name}: ${qty} bottles needed.`;
+  }
+}
+
+document.addEventListener('click', async (e) => {
+  const s = e.target.closest('[data-drink-id]');
+  if (s) {
+    const id = s.getAttribute('data-drink-id');
+    const d = drinks.find((x) => x._id === id);
+    if (d) pickDrink(d);
+    return;
+  }
+
+  const qBtn = e.target.closest('.qty-btn');
+  if (qBtn) {
+    selectedQty = Number(qBtn.getAttribute('data-qty'));
+    document.querySelectorAll('.qty-btn').forEach((b) => b.classList.remove('active'));
+    qBtn.classList.add('active');
+  }
+});
+
+searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
+document.getElementById('saveBtn').addEventListener('click', saveTask);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = '/login.html'; return; }
+  const userDocs = await getDocs(query(collection(db, 'users'), where('email', '==', user.email)));
+  userProfile = userDocs.empty ? { name: user.email } : userDocs.docs[0].data();
+
+  onSnapshot(collection(db, 'drinks'), (snap) => {
+    drinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    renderSuggestions(searchInput.value);
+  });
+});
+</script>
+</body>
+</html>

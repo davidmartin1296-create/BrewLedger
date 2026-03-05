@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <title>Brew-Ledger — Night Summary</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" type="image/png" href="/images/app-Brews.png">
-<link rel="apple-touch-icon" href="/images/app-Brews.png">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -83,11 +83,19 @@ body {
 }
 
 .banner-brand-icon {
-  width: 28px; height: 28px; border-radius: 7px;
-  background: linear-gradient(135deg, var(--p-d), var(--p));
+  width: 32px; height: 32px; border-radius: 9px;
+  padding: 4px;
+  background: linear-gradient(145deg, rgba(167,139,250,0.22), rgba(124,58,237,0.14));
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
-  box-shadow: 0 0 12px var(--p-glow);
+  border: 1px solid rgba(255,255,255,0.14);
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(124,58,237,0.22), 0 3px 8px rgba(0,0,0,0.32);
+}
+
+.banner-brand-icon img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(167,139,250,0.25));
 }
 
 .banner-brand-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.2px; }
@@ -363,7 +371,7 @@ body {
   <img src="/images/Hero-image.png" alt="Brew-Ledger">
   <div class="banner-content">
     <div class="banner-brand">
-      <div class="banner-brand-icon">B</div>
+      <div class="banner-brand-icon"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
       <span class="banner-brand-name">Brew-Ledger</span>
     </div>
     <div class="banner-title">Night Summary</div>
@@ -465,28 +473,45 @@ body {
   </a>
 </nav>
 
-<script>
+<script type="module">
+
+import { collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { db } from "./firebase.js";
 
 let inventoryData = [];
 let nightSession  = { startedAt: '', items: {} };
 
-function loadData() {
-  const inv = localStorage.getItem('inventoryData');
-  if (inv) try { inventoryData = JSON.parse(inv); } catch(e) { inventoryData = []; }
-  if (!Array.isArray(inventoryData)) inventoryData = [];
+const inventoryCol = collection(db, 'inventory');
+const sessionRef   = doc(db, 'sessions', 'current');
 
-  const ns = localStorage.getItem('nightSession');
-  if (ns) try { nightSession = JSON.parse(ns); } catch(e) {}
-  if (!nightSession || typeof nightSession !== 'object') nightSession = { startedAt: '', items: {} };
-  if (!nightSession.items) nightSession.items = {};
-}
+onSnapshot(inventoryCol, (snap) => {
+  inventoryData = snap.docs
+    .map((d) => ({ _id: d.id, ...d.data() }))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+  renderPage();
+});
 
-function saveSession() {
-  localStorage.setItem('nightSession', JSON.stringify(nightSession));
-}
+onSnapshot(sessionRef, async (snap) => {
+  if (snap.exists()) {
+    nightSession = snap.data();
+    if (!nightSession.items) nightSession.items = {};
+    if (!nightSession.startedAt) {
+      await setDoc(sessionRef, { ...nightSession, startedAt: todayLabel() }, { merge: true });
+      return;
+    }
+  } else {
+    nightSession = { startedAt: todayLabel(), items: {} };
+    await setDoc(sessionRef, nightSession);
+  }
+  renderPage();
+});
 
 function getItem(name) {
   return nightSession.items[name] || { used: 0, replaced: 0 };
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 function renderPage() {
@@ -628,24 +653,19 @@ function handleOverlayTap(e) {
   if (e.target === document.getElementById('resetModal')) closeModal();
 }
 
-function confirmReset() {
-  nightSession.items     = {};
-  nightSession.startedAt = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-  saveSession();
+async function confirmReset() {
+  await setDoc(sessionRef, { startedAt: todayLabel(), items: {} }, { merge: true });
   closeModal();
-  setTimeout(() => { loadData(); renderPage(); }, 240);
 }
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { loadData(); renderPage(); }
-});
-
-loadData();
-renderPage();
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.handleOverlayTap = handleOverlayTap;
+window.confirmReset = confirmReset;
 
 </script>
 </body>

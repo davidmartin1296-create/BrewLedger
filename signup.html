@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign Up — Brew-Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
+<meta name="theme-color" content="#12100e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,#12100e 45%,#0e0c0a 100%)}
+.page{max-width:540px;margin:0 auto;min-height:100vh;padding:max(24px,env(safe-area-inset-top)) 20px 24px;display:flex;align-items:center}
+.card{width:100%;background:linear-gradient(145deg,rgba(184,115,51,.12),rgba(28,25,22,.94));border:1px solid rgba(184,115,51,.34);border-radius:22px;padding:22px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.6px;margin-bottom:8px}
+p{font-size:13px;color:rgba(245,243,239,.68);margin-bottom:14px;line-height:1.5}
+label{display:block;font-size:12px;color:#e9d5c2;margin-bottom:6px}
+.field{width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;padding:0 11px;margin-bottom:10px}
+.field:focus{outline:none;border-color:rgba(184,115,51,.6)}
+.btn{width:100%;height:46px;border-radius:11px;border:1px solid #d49a5d;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800}
+.msg{min-height:16px;margin-top:10px;font-size:12px;color:#fecaca}
+.links{margin-top:10px;display:flex;justify-content:space-between;font-size:12px}
+.links a{color:#f7d8b8;text-decoration:none}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="card">
+    <h1>Create New User</h1>
+    <p>Use your team access code to register.</p>
+    <form id="form">
+      <label for="name">Name</label>
+      <input class="field" id="name" type="text" autocomplete="name" required>
+      <label for="email">Email</label>
+      <input class="field" id="email" type="email" autocomplete="email" required>
+      <label for="password">Password</label>
+      <input class="field" id="password" type="password" autocomplete="new-password" minlength="6" required>
+      <label for="accessCode">Access Code</label>
+      <input class="field" id="accessCode" type="text" required>
+      <button class="btn" id="submitBtn" type="submit">Create Account</button>
+    </form>
+    <div class="msg" id="msg"></div>
+    <div class="links"><a href="/welcome.html">Back</a><a href="/login.html">Already have account?</a></div>
+  </section>
+</main>
+
+<script type="module">
+import { createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { auth, db } from "./firebase.js";
+
+const ACCESS_CODE = 'BREWS2026!';
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+const submitBtn = document.getElementById('submitBtn');
+
+onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/index.html'; });
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.textContent = '';
+  submitBtn.disabled = true;
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const accessCode = document.getElementById('accessCode').value.trim();
+
+  if (accessCode !== ACCESS_CODE) {
+    msg.textContent = 'Invalid access code.';
+    submitBtn.disabled = false;
+    return;
+  }
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name,
+      email,
+      role: 'staff',
+      createdAt: new Date().toISOString()
+    });
+    window.location.href = '/index.html';
+  } catch (err) {
+    msg.textContent = err?.message || 'Sign up failed.';
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
