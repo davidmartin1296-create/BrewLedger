@@ -60,6 +60,23 @@ body {
   overflow: hidden;
   flex-shrink: 0;
 }
+.menu-toggle {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  z-index: 4;
+  display: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(167,139,250,0.45);
+  background: rgba(20,10,50,0.75);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.menu-toggle .bars { display: grid; gap: 4px; }
+.menu-toggle .bars span { width: 18px; height: 2px; border-radius: 999px; background: var(--p-l); }
 
 .hero-banner img {
   width: 100%; height: 100%;
@@ -317,6 +334,45 @@ body {
   border-radius: 8px; display: flex; align-items: center; justify-content: center;
   padding: 0 3px; box-shadow: 0 0 8px rgba(245,158,11,0.5);
 }
+.menu-overlay {
+  position: fixed; inset: 0; z-index: 250;
+  background: rgba(0,0,0,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+.menu-overlay.open { opacity: 1; pointer-events: auto; }
+.menu-overlay[hidden] { display: none; }
+.menu-drawer {
+  position: absolute; top: 0; right: 0; height: 100%; width: min(86vw, 320px);
+  padding: max(16px, env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(160deg, rgba(30,15,60,0.98) 0%, rgba(15,8,35,0.98) 100%);
+  border-left: 1px solid rgba(167,139,250,0.28);
+  transform: translateX(100%); transition: transform .22s ease;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.menu-overlay.open .menu-drawer { transform: translateX(0); }
+.menu-top { display: flex; align-items: center; justify-content: space-between; }
+.menu-title { font-size: 12px; letter-spacing: .6px; text-transform: uppercase; color: rgba(255,255,255,0.72); font-weight: 700; }
+.menu-close {
+  width: 42px; height: 42px; border-radius: 10px;
+  border: 1px solid rgba(167,139,250,0.35); background: rgba(167,139,250,0.1); color: var(--p-l);
+  font-size: 22px; line-height: 1; cursor: pointer;
+}
+.menu-links { display: grid; gap: 8px; }
+.menu-links a {
+  position: relative; display: flex; align-items: center; min-height: 52px; padding: 0 14px;
+  border-radius: 12px; text-decoration: none; color: rgba(255,255,255,0.82); font-size: 15px; font-weight: 700;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+}
+.menu-links a.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124,58,237,0.45), rgba(167,139,250,0.3));
+  border-color: rgba(167,139,250,0.6);
+}
+.menu-links a.active::before {
+  content: '';
+  position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 999px; background: var(--p-l);
+}
+body.menu-open { overflow: hidden; }
 
 /* ── Reset modal ── */
 .modal-overlay {
@@ -359,6 +415,12 @@ body {
 
 .hidden { display: none !important; }
 
+@media (max-width:768px) {
+  body { padding-bottom: 16px; }
+  .tab-bar { display: none; }
+  .menu-toggle { display: inline-flex; }
+}
+
 @media (max-width:420px) {
   .usage-row { flex-wrap: wrap; align-items: flex-start; gap: 8px; }
   .usage-name { width: 100%; white-space: normal; line-height: 1.3; }
@@ -375,7 +437,11 @@ body {
   .page { padding-inline: 12px; }
   .banner-title { font-size: 22px; }
   .banner-stats { gap: 12px; }
-  .tab { font-size: 9px; }
+  .menu-links a { font-size: 14px; }
+}
+
+@media (min-width:769px) {
+  .menu-overlay { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -399,6 +465,9 @@ body {
 
 <!-- Hero banner with stats overlay -->
 <div class="hero-banner">
+  <button class="menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open navigation menu" aria-controls="mobileMenuPanel" aria-expanded="false">
+    <span class="bars"><span></span><span></span><span></span></span>
+  </button>
   <img src="/images/Hero-image.png" alt="Brew-Ledger">
   <div class="banner-content">
     <div class="banner-brand">
@@ -476,6 +545,22 @@ body {
       <button class="modal-cancel" onclick="closeModal()">Cancel</button>
     </div>
   </div>
+</div>
+
+<div class="menu-overlay" id="mobileMenuOverlay" hidden>
+  <aside class="menu-drawer" id="mobileMenuPanel" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
+    <div class="menu-top">
+      <div class="menu-title">Navigate</div>
+      <button class="menu-close" id="mobileMenuClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="menu-links" role="navigation" aria-label="Primary">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/record.html">Record</a>
+      <a href="/drinks.html">Drinks</a>
+      <a class="active" href="/summary.html">Summary</a>
+      <a href="/settings.html">Settings</a>
+    </nav>
+  </aside>
 </div>
 
 <!-- Bottom tab bar -->
@@ -698,6 +783,44 @@ window.closeModal = closeModal;
 window.handleOverlayTap = handleOverlayTap;
 window.confirmReset = confirmReset;
 
+</script>
+<script>
+(() => {
+  const toggle = document.getElementById('mobileMenuToggle');
+  const overlay = document.getElementById('mobileMenuOverlay');
+  const panel = document.getElementById('mobileMenuPanel');
+  const closeBtn = document.getElementById('mobileMenuClose');
+  if (!toggle || !overlay || !panel || !closeBtn) return;
+
+  function openMenu() {
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    document.body.classList.add('menu-open');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    overlay.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    window.setTimeout(() => {
+      if (!overlay.classList.contains('open')) overlay.hidden = true;
+    }, 220);
+  }
+
+  toggle.addEventListener('click', () => {
+    if (overlay.hidden) openMenu();
+    else closeMenu();
+  });
+  closeBtn.addEventListener('click', closeMenu);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeMenu();
+  });
+  panel.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.hidden) closeMenu();
+  });
+})();
 </script>
 </body>
 </html>

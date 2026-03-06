@@ -18,6 +18,9 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
 .logo img{width:100%;height:100%;object-fit:contain}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.menu-toggle{display:none;margin-left:auto;width:46px;height:46px;border-radius:12px;border:1px solid rgba(184,115,51,.4);background:rgba(184,115,51,.12);align-items:center;justify-content:center;cursor:pointer}
+.menu-toggle .bars{display:grid;gap:4px}
+.menu-toggle .bars span{width:18px;height:2px;background:#f7d8b8;border-radius:999px}
 .main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
 .hero{border-radius:16px;min-height:120px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.36),rgba(10,8,6,.84)),url('/images/app-Brews.png') center/cover no-repeat;padding:14px;display:flex;align-items:flex-end}
 .hero h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
@@ -32,11 +35,32 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
 .nav a{height:var(--nav-h);text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
 .nav a.active{color:#d49a5d}
+.menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.56);backdrop-filter:blur(6px);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.menu-overlay.open{opacity:1;pointer-events:auto}
+.menu-overlay[hidden]{display:none}
+.menu-drawer{position:absolute;top:0;right:0;height:100%;width:min(86vw,320px);padding:max(16px,env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(165deg,#1a1612,#120f0d);border-left:1px solid rgba(184,115,51,.35);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;gap:14px}
+.menu-overlay.open .menu-drawer{transform:translateX(0)}
+.menu-top{display:flex;align-items:center;justify-content:space-between}
+.menu-title{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:rgba(245,243,239,.72);font-weight:700}
+.menu-close{width:42px;height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.42);background:rgba(184,115,51,.14);color:#f7d8b8;font-size:22px;line-height:1;cursor:pointer}
+.menu-links{display:grid;gap:8px}
+.menu-links a{position:relative;display:flex;align-items:center;min-height:52px;padding:0 14px;border-radius:12px;text-decoration:none;color:rgba(245,243,239,.82);font-size:15px;font-weight:700;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+.menu-links a.active{color:#fff;background:linear-gradient(135deg,rgba(155,95,43,.5),rgba(184,115,51,.35));border-color:rgba(212,154,93,.6)}
+.menu-links a.active::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:999px;background:#f7d8b8}
+body.menu-open{overflow:hidden}
+@media (max-width:768px){
+  body{padding-bottom:16px}
+  .nav{display:none}
+  .menu-toggle{display:inline-flex}
+}
+@media (min-width:769px){
+  .menu-overlay{display:none!important}
+}
 @media (max-width:380px){
   .main{padding:12px}
   .hero h1{font-size:18px}
   .card{padding:12px}
-  .nav a{font-size:10px;letter-spacing:.15px;text-transform:none}
+  .menu-links a{font-size:14px}
 }
 </style>
 </head>
@@ -44,7 +68,25 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Settings</div>
+  <button class="menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open navigation menu" aria-controls="mobileMenuPanel" aria-expanded="false">
+    <span class="bars"><span></span><span></span><span></span></span>
+  </button>
 </header>
+<div class="menu-overlay" id="mobileMenuOverlay" hidden>
+  <aside class="menu-drawer" id="mobileMenuPanel" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
+    <div class="menu-top">
+      <div class="menu-title">Navigate</div>
+      <button class="menu-close" id="mobileMenuClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="menu-links" role="navigation" aria-label="Primary">
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/record.html">Record</a>
+      <a href="/drinks.html">Drinks</a>
+      <a href="/summary.html">Summary</a>
+      <a class="active" href="/settings.html">Settings</a>
+    </nav>
+  </aside>
+</div>
 <main class="main">
   <section class="hero">
     <div>
@@ -98,6 +140,44 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   localStorage.removeItem('brew_access_name');
   window.location.href = '/welcome.html';
 });
+</script>
+<script>
+(() => {
+  const toggle = document.getElementById('mobileMenuToggle');
+  const overlay = document.getElementById('mobileMenuOverlay');
+  const panel = document.getElementById('mobileMenuPanel');
+  const closeBtn = document.getElementById('mobileMenuClose');
+  if (!toggle || !overlay || !panel || !closeBtn) return;
+
+  function openMenu() {
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    document.body.classList.add('menu-open');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    overlay.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    window.setTimeout(() => {
+      if (!overlay.classList.contains('open')) overlay.hidden = true;
+    }, 220);
+  }
+
+  toggle.addEventListener('click', () => {
+    if (overlay.hidden) openMenu();
+    else closeMenu();
+  });
+  closeBtn.addEventListener('click', closeMenu);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeMenu();
+  });
+  panel.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.hidden) closeMenu();
+  });
+})();
 </script>
 </body>
 </html>
