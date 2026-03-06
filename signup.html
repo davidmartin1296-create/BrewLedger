@@ -163,7 +163,12 @@ function explainSignupError(err) {
   return 'Could not set up your account right now. Please try again.';
 }
 
-onAuthStateChanged(auth, (u) => { if (u) window.location.href = '/dashboard.html'; });
+onAuthStateChanged(auth, (u) => {
+  if (!u) return;
+  localStorage.setItem('brew_access_granted', '1');
+  localStorage.setItem('brew_access_name', u.displayName || u.email || 'Bar Staff');
+  window.location.href = '/dashboard.html';
+});
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();

@@ -122,6 +122,9 @@ body.menu-open{overflow:hidden}
 </nav>
 
 <script type="module">
+import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { auth } from "./firebase.js";
+
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
@@ -136,9 +139,15 @@ if (!hasCodeAccess()) {
 }
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-  localStorage.removeItem('brew_access_granted');
-  localStorage.removeItem('brew_access_name');
-  window.location.href = '/welcome.html';
+  try {
+    await signOut(auth);
+  } catch {
+    // Continue with local logout even if remote sign-out fails.
+  } finally {
+    localStorage.removeItem('brew_access_granted');
+    localStorage.removeItem('brew_access_name');
+    window.location.href = '/welcome.html';
+  }
 });
 </script>
 <script>

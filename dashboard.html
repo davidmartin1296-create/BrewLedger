@@ -30,6 +30,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
 .panel p{font-size:12px;color:rgba(245,243,239,.66);line-height:1.5}
 .task-list{display:grid;gap:10px}
+.task-swipe{position:relative;border-radius:14px;overflow:hidden}
+.task-remove-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 16px;background:linear-gradient(135deg,rgba(239,68,68,.82),rgba(185,28,28,.78));color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.task-track{position:relative;z-index:1;transition:transform .2s ease;will-change:transform}
+.task-track.dragging{transition:none}
 .task{background:linear-gradient(145deg,rgba(255,255,255,.02),var(--card));border:1px solid var(--border);border-radius:14px;padding:12px}
 .task.red{border-color:rgba(239,68,68,.48);box-shadow:inset 0 0 0 1px rgba(239,68,68,.25)}
 .task.amber{border-color:rgba(245,158,11,.48);box-shadow:inset 0 0 0 1px rgba(245,158,11,.2)}
@@ -54,6 +58,17 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .comment .meta{font-size:11px;color:rgba(245,243,239,.58);margin-bottom:2px}
 .comment .text{font-size:12px;color:rgba(245,243,239,.88);line-height:1.45;white-space:pre-wrap}
 .empty{padding:24px 10px;text-align:center;font-size:13px;color:rgba(245,243,239,.62)}
+.confirm-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;width:min(94vw,420px);padding:12px;border-radius:12px;background:rgba(20,16,12,.96);border:1px solid rgba(184,115,51,.4);box-shadow:0 12px 28px rgba(0,0,0,.4);transition:opacity .2s ease,transform .2s ease;z-index:120}
+.confirm-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.confirm-text{font-size:13px;font-weight:700;line-height:1.45;color:#fff}
+.confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.confirm-btn{min-height:40px;padding:0 14px;border-radius:9px;border:1px solid transparent;background:#2b261f;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.confirm-btn.yes{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.45);color:#fecaca}
+.confirm-btn.cancel{background:rgba(184,115,51,.14);border-color:rgba(184,115,51,.4);color:#f7d8b8}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:121}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45)}
+.toast.success{background:rgba(34,197,94,.9);border:1px solid rgba(187,247,208,.45)}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 .nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
 .nav a{height:var(--nav-h);text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
@@ -136,6 +151,14 @@ body.menu-open{overflow:hidden}
     <a href="/settings.html">Settings</a>
   </div>
 </nav>
+<div class="confirm-toast" id="removeConfirm" role="alertdialog" aria-live="assertive" aria-label="Remove task confirmation">
+  <div class="confirm-text">Are you sure you want to remove task?</div>
+  <div class="confirm-actions">
+    <button class="confirm-btn cancel" id="removeConfirmCancel" type="button">Cancel</button>
+    <button class="confirm-btn yes" id="removeConfirmYes" type="button">Yes</button>
+  </div>
+</div>
+<div class="toast error" id="toast"></div>
 
 <script type="module">
 import { collection, doc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -143,8 +166,20 @@ import { db } from "./firebase.js";
 
 const taskListEl = document.getElementById('taskList');
 const userNameEl = document.getElementById('userName');
+const removeConfirmEl = document.getElementById('removeConfirm');
+const removeConfirmYesEl = document.getElementById('removeConfirmYes');
+const removeConfirmCancelEl = document.getElementById('removeConfirmCancel');
+const toastEl = document.getElementById('toast');
 let currentProfile = null;
 let tasksUnsub = null;
+let pendingRemoveTaskId = null;
+let toastTimer = null;
+let openSwipeEl = null;
+let swipeState = null;
+const SWIPE_TRIGGER_PX = 72;
+const SWIPE_OPEN_PX = 96;
+const SWIPE_LOCK_PX = 10;
+const SWIPE_VERTICAL_TOLERANCE_PX = 24;
 
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
@@ -206,6 +241,18 @@ async function closeTask(taskId) {
   });
 }
 
+async function removeTask(taskId) {
+  const ref = doc(db, 'restock_tasks', taskId);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    tx.update(ref, {
+      status: 'closed',
+      updatedAt: new Date().toISOString()
+    });
+  });
+}
+
 async function addComment(taskId) {
   const text = window.prompt('Add comment about shortage or issue:');
   if (!text || !text.trim()) return;
@@ -234,7 +281,8 @@ function renderTasks(tasks) {
   });
 
   if (sorted.length === 0) {
-    taskListEl.innerHTML = '<div class="panel empty">No open restock tasks. Completed tasks can be closed one by one.</div>';
+    taskListEl.innerHTML = '<div class="panel empty">No open restock tasks right now.</div>';
+    openSwipeEl = null;
     return;
   }
 
@@ -248,34 +296,38 @@ function renderTasks(tasks) {
     const comments = Array.isArray(t.comments) ? t.comments : [];
 
     return `
-      <article class="task ${cls}">
-        <div class="row">
-          <div class="name">${escapeHtml(t.drinkName || 'Unknown')}</div>
-          <span class="status ${pillCls}">${label}</span>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><div class="k">Needed</div><div class="v">${needed}</div></div>
-          <div class="stat"><div class="k">Replaced</div><div class="v">${replaced}</div></div>
-          <div class="stat"><div class="k">Outstanding</div><div class="v">${outstanding}</div></div>
-        </div>
-
-        <div class="actions">
-          ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace Bottle</button>
-          <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2 Bottles</button>` : ''}
-          ${isCompleted ? `<button class="btn primary mini" data-close="1" data-id="${t._id}">Close Task</button>` : ''}
-          <button class="btn soft mini" data-comment="1" data-id="${t._id}">Add Comment</button>
-        </div>
-
-        ${comments.length ? `<div class="comments">${comments.slice(-3).reverse().map((c) => `
-          <div class="comment">
-            <div class="meta">Comment by ${escapeHtml(c.authorName || 'Staff')} - ${fmtDate(c.createdAt)}</div>
-            <div class="text">${escapeHtml(c.text || '')}</div>
+      <div class="task-swipe" data-task-id="${t._id}">
+        <div class="task-remove-bg">Remove</div>
+        <article class="task ${cls} task-track" data-task-id="${t._id}">
+          <div class="row">
+            <div class="name">${escapeHtml(t.drinkName || 'Unknown')}</div>
+            <span class="status ${pillCls}">${label}</span>
           </div>
-        `).join('')}</div>` : ''}
-      </article>
+
+          <div class="stats">
+            <div class="stat"><div class="k">Needed</div><div class="v">${needed}</div></div>
+            <div class="stat"><div class="k">Replaced</div><div class="v">${replaced}</div></div>
+            <div class="stat"><div class="k">Outstanding</div><div class="v">${outstanding}</div></div>
+          </div>
+
+          <div class="actions">
+            ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace Bottle</button>
+            <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2 Bottles</button>` : ''}
+            ${isCompleted ? `<button class="btn primary mini" data-close="1" data-id="${t._id}">Close Task</button>` : ''}
+            <button class="btn soft mini" data-comment="1" data-id="${t._id}">Add Comment</button>
+          </div>
+
+          ${comments.length ? `<div class="comments">${comments.slice(-3).reverse().map((c) => `
+            <div class="comment">
+              <div class="meta">Comment by ${escapeHtml(c.authorName || 'Staff')} - ${fmtDate(c.createdAt)}</div>
+              <div class="text">${escapeHtml(c.text || '')}</div>
+            </div>
+          `).join('')}</div>` : ''}
+        </article>
+      </div>
     `;
   }).join('');
+  openSwipeEl = null;
 }
 
 function escapeHtml(str) {
@@ -285,6 +337,143 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+function showToast(message, type = 'error') {
+  if (!toastEl) return;
+  toastEl.textContent = message;
+  toastEl.classList.remove('error', 'success');
+  toastEl.classList.add(type);
+  toastEl.classList.add('show');
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+function resetSwipe(trackEl) {
+  if (!trackEl) return;
+  trackEl.classList.remove('dragging');
+  trackEl.style.transform = '';
+  const container = trackEl.closest('.task-swipe');
+  if (container) container.classList.remove('open');
+}
+
+function closeOpenSwipe() {
+  if (!openSwipeEl) return;
+  const trackEl = openSwipeEl.querySelector('.task-track');
+  resetSwipe(trackEl);
+  openSwipeEl = null;
+}
+
+function openSwipe(container) {
+  if (!container) return;
+  if (openSwipeEl && openSwipeEl !== container) closeOpenSwipe();
+  const trackEl = container.querySelector('.task-track');
+  if (!trackEl) return;
+  container.classList.add('open');
+  trackEl.classList.remove('dragging');
+  trackEl.style.transform = `translateX(-${SWIPE_OPEN_PX}px)`;
+  openSwipeEl = container;
+}
+
+function openRemoveConfirm(taskId) {
+  pendingRemoveTaskId = taskId;
+  removeConfirmEl?.classList.add('show');
+}
+
+function closeRemoveConfirm() {
+  pendingRemoveTaskId = null;
+  removeConfirmEl?.classList.remove('show');
+  closeOpenSwipe();
+}
+
+taskListEl.addEventListener('touchstart', (e) => {
+  if (pendingRemoveTaskId) return;
+  if (e.touches.length !== 1) return;
+  const trackEl = e.target.closest('.task-track');
+  if (!trackEl || !taskListEl.contains(trackEl)) return;
+
+  const touch = e.touches[0];
+  swipeState = {
+    trackEl,
+    containerEl: trackEl.closest('.task-swipe'),
+    startX: touch.clientX,
+    startY: touch.clientY,
+    dx: 0,
+    dy: 0,
+    locked: false,
+    cancelled: false
+  };
+}, { passive: true });
+
+taskListEl.addEventListener('touchmove', (e) => {
+  if (!swipeState || swipeState.cancelled) return;
+  if (e.touches.length !== 1) return;
+  const touch = e.touches[0];
+  swipeState.dx = touch.clientX - swipeState.startX;
+  swipeState.dy = touch.clientY - swipeState.startY;
+  const absX = Math.abs(swipeState.dx);
+  const absY = Math.abs(swipeState.dy);
+
+  if (!swipeState.locked) {
+    if (absY > absX && absY > SWIPE_LOCK_PX) {
+      swipeState.cancelled = true;
+      return;
+    }
+    if (absX < SWIPE_LOCK_PX) return;
+    if (swipeState.dy > SWIPE_VERTICAL_TOLERANCE_PX || swipeState.dy < -SWIPE_VERTICAL_TOLERANCE_PX) {
+      swipeState.cancelled = true;
+      return;
+    }
+    swipeState.locked = true;
+  }
+
+  const clamped = Math.max(-SWIPE_OPEN_PX * 1.35, Math.min(0, swipeState.dx));
+  swipeState.trackEl.classList.add('dragging');
+  swipeState.trackEl.style.transform = `translateX(${clamped}px)`;
+  e.preventDefault();
+}, { passive: false });
+
+function finishSwipe() {
+  if (!swipeState) return;
+  const { trackEl, containerEl, dx, locked, cancelled } = swipeState;
+  swipeState = null;
+  if (!trackEl || !containerEl || cancelled || !locked) {
+    resetSwipe(trackEl);
+    return;
+  }
+
+  if (dx <= -SWIPE_TRIGGER_PX) {
+    openSwipe(containerEl);
+    openRemoveConfirm(containerEl.getAttribute('data-task-id'));
+    return;
+  }
+
+  resetSwipe(trackEl);
+  if (openSwipeEl === containerEl) openSwipeEl = null;
+}
+
+taskListEl.addEventListener('touchend', finishSwipe, { passive: true });
+taskListEl.addEventListener('touchcancel', finishSwipe, { passive: true });
+
+removeConfirmCancelEl?.addEventListener('click', () => {
+  closeRemoveConfirm();
+});
+
+removeConfirmYesEl?.addEventListener('click', async () => {
+  const taskId = pendingRemoveTaskId;
+  if (!taskId) return;
+  removeConfirmYesEl.disabled = true;
+  removeConfirmCancelEl.disabled = true;
+  try {
+    await removeTask(taskId);
+    closeRemoveConfirm();
+    showToast('Task removed.', 'success');
+  } catch {
+    showToast('Could not remove this task right now.');
+  } finally {
+    removeConfirmYesEl.disabled = false;
+    removeConfirmCancelEl.disabled = false;
+  }
+});
 
 document.addEventListener('click', async (e) => {
   const replace = e.target.closest('[data-replace]');

@@ -594,6 +594,14 @@ body.menu-open { overflow: hidden; }
 import { collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
 
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
+
+if (!hasCodeAccess()) {
+  window.location.href = '/login.html';
+}
+
 let inventoryData = [];
 let nightSession  = { startedAt: '', items: {} };
 
