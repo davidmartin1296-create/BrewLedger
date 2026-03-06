@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;--copper:#b87333;--copper-soft:#d49a5d;--green:#22c55e;--amber:#f59e0b;--red:#ef4444}
-body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,var(--bg) 45%,#0e0c0a 100%);color:#f5f3ef;min-height:100vh;padding-bottom:92px}
+:root{--bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;--copper:#b87333;--copper-soft:#d49a5d;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--nav-h:60px;--nav-space:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px)}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,var(--bg) 45%,#0e0c0a 100%);color:#f5f3ef;min-height:100vh;padding-bottom:var(--nav-space)}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
 .logo img{width:100%;height:100%;object-fit:contain}
@@ -40,10 +40,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .stat .k{font-size:11px;color:rgba(245,243,239,.62)}
 .stat .v{font-size:20px;font-weight:800;margin-top:2px}
 .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn{height:38px;padding:0 12px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:#2b261f}
+.btn{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:#2b261f}
 .btn.primary{background:linear-gradient(135deg,#9b5f2b,var(--copper));border-color:#ca8b4f}
 .btn.soft{background:rgba(184,115,51,.12);border-color:rgba(184,115,51,.35);color:#f7d8b8}
-.btn.mini{height:34px;padding:0 10px;font-size:12px}
+.btn.mini{min-height:44px;padding:0 10px;font-size:12px}
 .comments{margin-top:10px;display:grid;gap:7px}
 .comment{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px}
 .comment .meta{font-size:11px;color:rgba(245,243,239,.58);margin-bottom:2px}
@@ -51,8 +51,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 .empty{padding:24px 10px;text-align:center;font-size:13px;color:rgba(245,243,239,.62)}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 .nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
-.nav a{height:60px;text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.nav a{height:var(--nav-h);text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
 .nav a.active{color:var(--copper-soft)}
+@media (max-width:380px){
+  .main{padding:12px}
+  .hero h1{font-size:18px}
+  .panel{padding:12px}
+  .stats{grid-template-columns:1fr}
+  .nav a{font-size:10px;letter-spacing:.15px;text-transform:none}
+}
 </style>
 </head>
 <body>
@@ -79,8 +86,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 12
 <nav class="nav">
   <div class="nav-inner">
     <a class="active" href="/dashboard.html">Dashboard</a>
-    <a href="/record.html">Record Inventory</a>
-    <a href="/drinks.html">Drinks List</a>
+    <a href="/record.html">Record</a>
+    <a href="/drinks.html">Drinks</a>
     <a href="/settings.html">Settings</a>
   </div>
 </nav>
@@ -136,6 +143,24 @@ async function replaceQty(taskId, delta) {
   });
 }
 
+async function closeTask(taskId) {
+  const ref = doc(db, 'restock_tasks', taskId);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const t = snap.data();
+    const needed = Math.max(0, Number(t.neededQty || 0));
+    const replaced = Math.max(0, Number(t.replacedQty || 0));
+    const outstanding = Math.max(0, needed - replaced);
+    const isCompleted = outstanding <= 0 || t.status === 'complete';
+    if (!isCompleted) return;
+    tx.update(ref, {
+      status: 'closed',
+      updatedAt: new Date().toISOString()
+    });
+  });
+}
+
 async function addComment(taskId) {
   const text = window.prompt('Add comment about shortage or issue:');
   if (!text || !text.trim()) return;
@@ -156,14 +181,15 @@ async function addComment(taskId) {
 }
 
 function renderTasks(tasks) {
-  const sorted = tasks.slice().sort((a, b) => {
+  const visibleTasks = tasks.filter((t) => t.status !== 'closed');
+  const sorted = visibleTasks.slice().sort((a, b) => {
     const av = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
     const bv = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
     return bv - av;
   });
 
   if (sorted.length === 0) {
-    taskListEl.innerHTML = '<div class="panel empty">No restock tasks yet. Tap Record Inventory to create the first task.</div>';
+    taskListEl.innerHTML = '<div class="panel empty">No open restock tasks. Completed tasks can be closed one by one.</div>';
     return;
   }
 
@@ -171,6 +197,7 @@ function renderTasks(tasks) {
     const needed = Math.max(0, Number(t.neededQty || 0));
     const replaced = Math.max(0, Number(t.replacedQty || 0));
     const outstanding = Math.max(0, needed - replaced);
+    const isCompleted = outstanding <= 0 || t.status === 'complete';
     const cls = cardClass(needed, replaced, outstanding);
     const [label, pillCls] = statusLabel(needed, replaced, outstanding);
     const comments = Array.isArray(t.comments) ? t.comments : [];
@@ -189,8 +216,9 @@ function renderTasks(tasks) {
         </div>
 
         <div class="actions">
-          <button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace Bottle</button>
-          <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2 Bottles</button>
+          ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace Bottle</button>
+          <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2 Bottles</button>` : ''}
+          ${isCompleted ? `<button class="btn primary mini" data-close="1" data-id="${t._id}">Close Task</button>` : ''}
           <button class="btn soft mini" data-comment="1" data-id="${t._id}">Add Comment</button>
         </div>
 
@@ -227,6 +255,14 @@ document.addEventListener('click', async (e) => {
   if (comment) {
     const taskId = comment.getAttribute('data-id');
     await addComment(taskId);
+    return;
+  }
+
+  const close = e.target.closest('[data-close]');
+  if (close) {
+    const taskId = close.getAttribute('data-id');
+    close.disabled = true;
+    try { await closeTask(taskId); } finally { close.disabled = false; }
   }
 });
 

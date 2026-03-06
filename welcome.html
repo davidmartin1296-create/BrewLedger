@@ -11,7 +11,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,#12100e 45%,#0e0c0a 100%)}
-.page{max-width:560px;margin:0 auto;min-height:100vh;padding:max(24px,env(safe-area-inset-top)) 20px 24px;display:flex;align-items:center}
+.page{max-width:560px;margin:0 auto;min-height:100vh;min-height:100svh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) 20px 24px;display:flex;align-items:center}
 .card{width:100%;background:linear-gradient(145deg,rgba(184,115,51,.12),rgba(28,25,22,.94));border:1px solid rgba(184,115,51,.34);border-radius:22px;padding:24px;box-shadow:0 20px 46px rgba(0,0,0,.42)}
 .hero{height:140px;border-radius:16px;margin-bottom:14px;background:linear-gradient(160deg,rgba(10,8,6,.3),rgba(10,8,6,.8)),url('/images/Hero-image.png') center/cover no-repeat;border:1px solid rgba(212,154,93,.35);display:flex;align-items:flex-end;padding:12px}
 .hero-txt{font-size:12px;font-weight:700;letter-spacing:.4px;color:#f7d8b8}
@@ -31,8 +31,15 @@ body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;bac
 .field{height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#1f1b17;color:#fff;padding:0 11px;text-transform:uppercase;letter-spacing:.6px}
 .field:focus{outline:none;border-color:rgba(184,115,51,.65)}
 .btn.quick-btn{height:44px;padding:0 14px;border:1px solid rgba(184,115,51,.46);background:rgba(184,115,51,.12);color:#f7d8b8;cursor:pointer}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45);color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:120}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45);color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:120}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:380px){
+  .page{padding:16px 14px 20px}
+  .card{padding:16px}
+  .name{font-size:19px}
+  .quick-row{grid-template-columns:1fr}
+  .btn.quick-btn{width:100%}
+}
 </style>
 </head>
 <body>
