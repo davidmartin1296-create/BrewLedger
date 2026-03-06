@@ -30,6 +30,7 @@
   --surface: rgba(20,10,50,0.5);
   --border:  rgba(167,139,250,0.13);
   --tab-h:   62px;
+  --nav-space: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 8px);
 }
 
 html { scroll-behavior: smooth; }
@@ -42,7 +43,7 @@ body {
   color: #fff;
   min-height: 100vh;
   overflow-x: hidden;
-  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  padding-bottom: var(--nav-space);
 }
 
 /* ── Ambient ── */
@@ -60,23 +61,6 @@ body {
   overflow: hidden;
   flex-shrink: 0;
 }
-.menu-toggle {
-  position: absolute;
-  top: max(14px, env(safe-area-inset-top));
-  right: 14px;
-  z-index: 4;
-  display: none;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  border: 1px solid rgba(167,139,250,0.45);
-  background: rgba(20,10,50,0.75);
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.menu-toggle .bars { display: grid; gap: 4px; }
-.menu-toggle .bars span { width: 18px; height: 2px; border-radius: 999px; background: var(--p-l); }
 
 .hero-banner img {
   width: 100%; height: 100%;
@@ -299,80 +283,39 @@ body {
   box-shadow: 0 16px 56px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,250,0.1);
 }
 
-/* ── Tab bar ── */
+/* ── Bottom nav ── */
 .tab-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  display: flex;
-  background: rgba(7,5,15,0.92);
-  backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid var(--border);
+  background: rgba(7,5,12,0.97);
+  backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-top: 1px solid rgba(184,115,51,0.22);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-.tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; height: var(--tab-h);
-  text-decoration: none; color: rgba(255,255,255,0.3);
-  font-size: 10px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
-  transition: color 0.2s; position: relative;
+.nav-inner { display: flex; max-width: 760px; margin: 0 auto; }
+.nav-tab {
+  flex: 1; min-width: 0; height: var(--tab-h);
+  text-decoration: none; color: rgba(255,255,255,0.32);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+  transition: color 0.15s; position: relative; -webkit-tap-highlight-color: transparent;
 }
-.tab.active { color: var(--p-l); }
-.tab:hover:not(.active) { color: rgba(255,255,255,0.55); }
-.tab svg { display: block; }
-.tab.active svg { filter: drop-shadow(0 0 7px rgba(167,139,250,0.6)); }
-.tab.active::after {
+.nav-tab.active { color: #d49a5d; }
+.nav-tab svg { display: block; flex-shrink: 0; }
+.nav-tab.active svg { filter: drop-shadow(0 0 6px rgba(212,154,93,0.45)); }
+.nav-tab.active::after {
   content: '';
-  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
-  width: 30px; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--p), transparent);
+  position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 2px;
+  background: linear-gradient(90deg, transparent, #b87333, transparent);
   border-radius: 1px;
 }
 .tab-badge {
-  position: absolute; top: 7px; right: calc(50% - 17px);
+  position: absolute; top: 7px; right: calc(50% - 18px);
   background: var(--amber); color: #07050f;
   font-size: 9px; font-weight: 800; min-width: 16px; height: 16px;
   border-radius: 8px; display: flex; align-items: center; justify-content: center;
   padding: 0 3px; box-shadow: 0 0 8px rgba(245,158,11,0.5);
 }
-.menu-overlay {
-  position: fixed; inset: 0; z-index: 250;
-  background: rgba(0,0,0,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  opacity: 0; pointer-events: none; transition: opacity .2s ease;
-}
-.menu-overlay.open { opacity: 1; pointer-events: auto; }
-.menu-overlay[hidden] { display: none; }
-.menu-drawer {
-  position: absolute; top: 0; right: 0; height: 100%; width: min(86vw, 320px);
-  padding: max(16px, env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
-  background: linear-gradient(160deg, rgba(30,15,60,0.98) 0%, rgba(15,8,35,0.98) 100%);
-  border-left: 1px solid rgba(167,139,250,0.28);
-  transform: translateX(100%); transition: transform .22s ease;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.menu-overlay.open .menu-drawer { transform: translateX(0); }
-.menu-top { display: flex; align-items: center; justify-content: space-between; }
-.menu-title { font-size: 12px; letter-spacing: .6px; text-transform: uppercase; color: rgba(255,255,255,0.72); font-weight: 700; }
-.menu-close {
-  width: 42px; height: 42px; border-radius: 10px;
-  border: 1px solid rgba(167,139,250,0.35); background: rgba(167,139,250,0.1); color: var(--p-l);
-  font-size: 22px; line-height: 1; cursor: pointer;
-}
-.menu-links { display: grid; gap: 8px; }
-.menu-links a {
-  position: relative; display: flex; align-items: center; min-height: 52px; padding: 0 14px;
-  border-radius: 12px; text-decoration: none; color: rgba(255,255,255,0.82); font-size: 15px; font-weight: 700;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-}
-.menu-links a.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(124,58,237,0.45), rgba(167,139,250,0.3));
-  border-color: rgba(167,139,250,0.6);
-}
-.menu-links a.active::before {
-  content: '';
-  position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 999px; background: var(--p-l);
-}
-body.menu-open { overflow: hidden; }
 
 /* ── Reset modal ── */
 .modal-overlay {
@@ -415,10 +358,8 @@ body.menu-open { overflow: hidden; }
 
 .hidden { display: none !important; }
 
-@media (max-width:768px) {
-  body { padding-bottom: 16px; }
-  .tab-bar { display: none; }
-  .menu-toggle { display: inline-flex; }
+@media (max-width:380px) {
+  .nav-tab { font-size: 8px; }
 }
 
 @media (max-width:420px) {
@@ -440,9 +381,6 @@ body.menu-open { overflow: hidden; }
   .menu-links a { font-size: 14px; }
 }
 
-@media (min-width:769px) {
-  .menu-overlay { display: none !important; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -450,7 +388,7 @@ body.menu-open { overflow: hidden; }
   .all-clear-icon,
   .modal-overlay,
   .modal-sheet { animation: none !important; }
-  * { transition: none !important; }
+  .nav-tab, .modal-overlay, .modal-sheet { transition: none !important; }
 }
 
 </style>
@@ -465,9 +403,6 @@ body.menu-open { overflow: hidden; }
 
 <!-- Hero banner with stats overlay -->
 <div class="hero-banner">
-  <button class="menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open navigation menu" aria-controls="mobileMenuPanel" aria-expanded="false">
-    <span class="bars"><span></span><span></span><span></span></span>
-  </button>
   <img src="/images/Hero-image.png" alt="Brew-Ledger">
   <div class="banner-content">
     <div class="banner-brand">
@@ -547,46 +482,31 @@ body.menu-open { overflow: hidden; }
   </div>
 </div>
 
-<div class="menu-overlay" id="mobileMenuOverlay" hidden>
-  <aside class="menu-drawer" id="mobileMenuPanel" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
-    <div class="menu-top">
-      <div class="menu-title">Navigate</div>
-      <button class="menu-close" id="mobileMenuClose" type="button" aria-label="Close navigation menu">&times;</button>
-    </div>
-    <nav class="menu-links" role="navigation" aria-label="Primary">
-      <a href="/dashboard.html">Dashboard</a>
-      <a href="/record.html">Record</a>
-      <a href="/drinks.html">Drinks</a>
-      <a class="active" href="/summary.html">Summary</a>
-      <a href="/settings.html">Settings</a>
-    </nav>
-  </aside>
-</div>
-
-<!-- Bottom tab bar -->
+<!-- Bottom nav -->
 <nav class="tab-bar">
-  <a class="tab" href="index.html">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-    Night
-  </a>
-  <a class="tab active" href="summary.html">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/>
-      <line x1="12" y1="20" x2="12" y2="4"/>
-      <line x1="6" y1="20" x2="6" y2="14"/>
-    </svg>
-    Summary
-    <span class="tab-badge hidden" id="summaryBadge"></span>
-  </a>
-  <a class="tab" href="settings.html">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-    Settings
-  </a>
+  <div class="nav-inner">
+    <a class="nav-tab" href="/dashboard.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Board
+    </a>
+    <a class="nav-tab" href="/record.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Record
+    </a>
+    <a class="nav-tab" href="/drinks.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Drinks
+    </a>
+    <a class="nav-tab active" href="/summary.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Summary
+      <span class="tab-badge hidden" id="summaryBadge"></span>
+    </a>
+    <a class="nav-tab" href="/settings.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
+  </div>
 </nav>
 
 <script type="module">
@@ -791,44 +711,6 @@ window.closeModal = closeModal;
 window.handleOverlayTap = handleOverlayTap;
 window.confirmReset = confirmReset;
 
-</script>
-<script>
-(() => {
-  const toggle = document.getElementById('mobileMenuToggle');
-  const overlay = document.getElementById('mobileMenuOverlay');
-  const panel = document.getElementById('mobileMenuPanel');
-  const closeBtn = document.getElementById('mobileMenuClose');
-  if (!toggle || !overlay || !panel || !closeBtn) return;
-
-  function openMenu() {
-    overlay.hidden = false;
-    requestAnimationFrame(() => overlay.classList.add('open'));
-    document.body.classList.add('menu-open');
-    toggle.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeMenu() {
-    overlay.classList.remove('open');
-    document.body.classList.remove('menu-open');
-    toggle.setAttribute('aria-expanded', 'false');
-    window.setTimeout(() => {
-      if (!overlay.classList.contains('open')) overlay.hidden = true;
-    }, 220);
-  }
-
-  toggle.addEventListener('click', () => {
-    if (overlay.hidden) openMenu();
-    else closeMenu();
-  });
-  closeBtn.addEventListener('click', closeMenu);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeMenu();
-  });
-  panel.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !overlay.hidden) closeMenu();
-  });
-})();
 </script>
 </body>
 </html>

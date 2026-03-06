@@ -6,100 +6,120 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/images/B-Logo.png">
 <link rel="apple-touch-icon" href="/images/B-Logo.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brew-Ledger">
 <meta name="theme-color" content="#12100e">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;--copper:#b87333;--copper-soft:#d49a5d;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--nav-h:60px;--nav-space:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px)}
+:root{
+  --bg:#12100e;--surface:#1c1916;--card:#26221d;--border:#3a322b;
+  --copper:#b87333;--copper-soft:#d49a5d;
+  --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --nav-h:62px;--nav-space:calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px)
+}
 body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,var(--bg) 45%,#0e0c0a 100%);color:#f5f3ef;min-height:100vh;padding-bottom:var(--nav-space)}
-a,button,input{-webkit-tap-highlight-color:transparent}
+a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid #f7d8b8;outline-offset:2px}
-.header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px}
-.logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45)}
+
+/* ── Header ── */
+.header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
-.user{margin-left:auto;font-size:12px;color:rgba(245,243,239,.65)}
-.menu-toggle{display:none;margin-left:8px;width:46px;height:46px;border-radius:12px;border:1px solid rgba(184,115,51,.4);background:rgba(184,115,51,.12);align-items:center;justify-content:center;cursor:pointer}
-.menu-toggle .bars{display:grid;gap:4px}
-.menu-toggle .bars span{width:18px;height:2px;background:#f7d8b8;border-radius:999px}
-.main{padding:14px;max-width:760px;margin:0 auto;display:grid;gap:12px}
-.hero{border-radius:16px;min-height:140px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.35),rgba(10,8,6,.86)),url('/images/app-Brews.png') center/cover no-repeat;padding:14px;display:flex;align-items:flex-end}
-.hero h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
-.hero p{margin-top:4px;font-size:12px;color:rgba(245,243,239,.82)}
-.panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:16px;padding:14px}
-.panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
-.panel p{font-size:12px;color:rgba(245,243,239,.66);line-height:1.5}
-.task-list{display:grid;gap:10px}
-.task-swipe{position:relative;border-radius:14px;overflow:hidden}
-.task-remove-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 16px;background:linear-gradient(135deg,rgba(239,68,68,.82),rgba(185,28,28,.78));color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1;min-width:0}
+.user{font-size:12px;color:rgba(245,243,239,.58);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Main ── */
+.main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
+
+/* ── Hero ── */
+.hero{border-radius:18px;min-height:156px;border:1px solid rgba(212,154,93,.32);background:linear-gradient(165deg,rgba(10,8,6,.28),rgba(10,8,6,.88)),url('/images/app-Brews.png') center/cover no-repeat;padding:16px;display:flex;align-items:flex-end}
+.hero h1{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.hero p{margin-top:5px;font-size:13px;color:rgba(245,243,239,.82);line-height:1.4}
+
+/* ── Panel ── */
+.panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:18px;padding:16px}
+.panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:5px}
+.panel p{font-size:13px;color:rgba(245,243,239,.66);line-height:1.55}
+
+/* ── Task list ── */
+.task-list{display:grid;gap:12px}
+.task-swipe{position:relative;border-radius:16px;overflow:hidden}
+.task-remove-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:linear-gradient(135deg,rgba(239,68,68,.82),rgba(185,28,28,.78));color:#fff;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
 .task-track{position:relative;z-index:1;transition:transform .2s ease;will-change:transform}
 .task-track.dragging{transition:none}
-.task{background:linear-gradient(145deg,rgba(255,255,255,.02),var(--card));border:1px solid var(--border);border-radius:14px;padding:12px}
-.task.red{border-color:rgba(239,68,68,.48);box-shadow:inset 0 0 0 1px rgba(239,68,68,.25)}
-.task.amber{border-color:rgba(245,158,11,.48);box-shadow:inset 0 0 0 1px rgba(245,158,11,.2)}
-.task.green{border-color:rgba(34,197,94,.48);box-shadow:inset 0 0 0 1px rgba(34,197,94,.2)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.name{font-size:15px;font-weight:800;letter-spacing:-.2px}
-.status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+.task{background:linear-gradient(145deg,rgba(255,255,255,.02),var(--card));border:1px solid var(--border);border-radius:16px;padding:14px}
+.task.red{border-color:rgba(239,68,68,.5);box-shadow:inset 0 0 0 1px rgba(239,68,68,.2)}
+.task.amber{border-color:rgba(245,158,11,.5);box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
+.task.green{border-color:rgba(34,197,94,.5);box-shadow:inset 0 0 0 1px rgba(34,197,94,.18)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.name{font-size:16px;font-weight:800;letter-spacing:-.3px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
 .status.red{background:rgba(239,68,68,.18);color:#fda4af}
 .status.amber{background:rgba(245,158,11,.18);color:#fcd34d}
 .status.green{background:rgba(34,197,94,.18);color:#86efac}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px;text-align:center}
-.stat .k{font-size:11px;color:rgba(245,243,239,.62)}
-.stat .v{font-size:20px;font-weight:800;margin-top:2px}
-.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:#2b261f}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:9px;text-align:center}
+.stat .k{font-size:10px;color:rgba(245,243,239,.52);letter-spacing:.4px;text-transform:uppercase}
+.stat .v{font-size:22px;font-weight:800;margin-top:3px;line-height:1}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{min-height:46px;padding:0 14px;border-radius:11px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:#2b261f;font-family:inherit}
 .btn.primary{background:linear-gradient(135deg,#9b5f2b,var(--copper));border-color:#ca8b4f}
 .btn.soft{background:rgba(184,115,51,.12);border-color:rgba(184,115,51,.35);color:#f7d8b8}
-.btn.mini{min-height:44px;padding:0 10px;font-size:12px}
-.comments{margin-top:10px;display:grid;gap:7px}
-.comment{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px}
-.comment .meta{font-size:11px;color:rgba(245,243,239,.58);margin-bottom:2px}
-.comment .text{font-size:12px;color:rgba(245,243,239,.88);line-height:1.45;white-space:pre-wrap}
-.empty{padding:24px 10px;text-align:center;font-size:13px;color:rgba(245,243,239,.62)}
-.confirm-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;width:min(94vw,420px);padding:12px;border-radius:12px;background:rgba(20,16,12,.96);border:1px solid rgba(184,115,51,.4);box-shadow:0 12px 28px rgba(0,0,0,.4);transition:opacity .2s ease,transform .2s ease;z-index:120}
+.btn.mini{min-height:44px;padding:0 12px;font-size:12px}
+
+/* ── Inline comment ── */
+.comment-row{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+.comment-input{flex:1;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;padding:0 12px;font-family:inherit;font-size:14px}
+.comment-input::placeholder{color:rgba(255,255,255,.3)}
+.comment-input:focus{outline:none;border-color:rgba(184,115,51,.65)}
+
+/* ── Comments ── */
+.comments{margin-top:12px;display:grid;gap:7px}
+.comment{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:9px}
+.comment .meta{font-size:11px;color:rgba(245,243,239,.5);margin-bottom:3px}
+.comment .text{font-size:13px;color:rgba(245,243,239,.88);line-height:1.45;white-space:pre-wrap}
+
+/* ── Empty ── */
+.empty{padding:28px 10px;text-align:center;font-size:13px;color:rgba(245,243,239,.52)}
+
+/* ── Confirm toast ── */
+.confirm-toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;width:min(94vw,420px);padding:14px 16px;border-radius:14px;background:rgba(20,16,12,.97);border:1px solid rgba(184,115,51,.4);box-shadow:0 16px 36px rgba(0,0,0,.5);transition:opacity .2s ease,transform .2s ease;z-index:120}
 .confirm-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-.confirm-text{font-size:13px;font-weight:700;line-height:1.45;color:#fff}
-.confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
-.confirm-btn{min-height:40px;padding:0 14px;border-radius:9px;border:1px solid transparent;background:#2b261f;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.confirm-text{font-size:14px;font-weight:700;line-height:1.45;color:#fff}
+.confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.confirm-btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:#2b261f;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .confirm-btn.yes{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.45);color:#fecaca}
 .confirm-btn.cancel{background:rgba(184,115,51,.14);border-color:rgba(184,115,51,.4);color:#f7d8b8}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:11px 14px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:121}
+
+/* ── Toast ── */
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:12px 16px;border-radius:11px;color:#fff;font-size:13px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:121}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:rgba(239,68,68,.92);border:1px solid rgba(254,202,202,.45)}
 .toast.success{background:rgba(34,197,94,.9);border:1px solid rgba(187,247,208,.45)}
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(12,10,8,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
-.nav-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:0 auto}
-.nav a{height:var(--nav-h);text-decoration:none;color:rgba(245,243,239,.56);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
-.nav a.active{color:var(--copper-soft)}
-.menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.56);backdrop-filter:blur(6px);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s ease}
-.menu-overlay.open{opacity:1;pointer-events:auto}
-.menu-overlay[hidden]{display:none}
-.menu-drawer{position:absolute;top:0;right:0;height:100%;width:min(86vw,320px);padding:max(16px,env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(165deg,#1a1612,#120f0d);border-left:1px solid rgba(184,115,51,.35);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;gap:14px}
-.menu-overlay.open .menu-drawer{transform:translateX(0)}
-.menu-top{display:flex;align-items:center;justify-content:space-between}
-.menu-title{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:rgba(245,243,239,.72);font-weight:700}
-.menu-close{width:42px;height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.42);background:rgba(184,115,51,.14);color:#f7d8b8;font-size:22px;line-height:1;cursor:pointer}
-.menu-links{display:grid;gap:8px}
-.menu-links a{position:relative;display:flex;align-items:center;min-height:52px;padding:0 14px;border-radius:12px;text-decoration:none;color:rgba(245,243,239,.82);font-size:15px;font-weight:700;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
-.menu-links a.active{color:#fff;background:linear-gradient(135deg,rgba(155,95,43,.5),rgba(184,115,51,.35));border-color:rgba(212,154,93,.6)}
-.menu-links a.active::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:999px;background:#f7d8b8}
-body.menu-open{overflow:hidden}
-@media (max-width:768px){
-  body{padding-bottom:16px}
-  .nav{display:none}
-  .menu-toggle{display:inline-flex}
-}
-@media (min-width:769px){
-  .menu-overlay{display:none!important}
-}
+
+/* ── Bottom nav ── */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(10,8,7,.97);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.nav-inner{display:flex;max-width:760px;margin:0 auto}
+.nav-tab{flex:1;min-width:0;height:var(--nav-h);text-decoration:none;color:rgba(245,243,239,.38);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;transition:color .15s;position:relative;-webkit-tap-highlight-color:transparent}
+.nav-tab.active{color:var(--copper-soft)}
+.nav-tab svg{display:block;flex-shrink:0}
+.nav-tab.active svg{filter:drop-shadow(0 0 6px rgba(212,154,93,.45))}
+.nav-tab.active::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:24px;height:2px;background:linear-gradient(90deg,transparent,var(--copper),transparent);border-radius:1px}
+
 @media (max-width:380px){
-  .main{padding:12px}
-  .hero h1{font-size:18px}
+  .main{padding:12px;gap:10px}
+  .hero{min-height:130px}
+  .hero h1{font-size:19px}
   .panel{padding:12px}
-  .stats{grid-template-columns:1fr}
-  .menu-links a{font-size:14px}
+  .name{font-size:14px}
+  .nav-tab{font-size:8px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
 }
 </style>
 </head>
@@ -108,26 +128,7 @@ body.menu-open{overflow:hidden}
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Dashboard</div>
   <div class="user" id="userName">—</div>
-  <button class="menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open navigation menu" aria-controls="mobileMenuPanel" aria-expanded="false">
-    <span class="bars"><span></span><span></span><span></span></span>
-  </button>
 </header>
-
-<div class="menu-overlay" id="mobileMenuOverlay" hidden>
-  <aside class="menu-drawer" id="mobileMenuPanel" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
-    <div class="menu-top">
-      <div class="menu-title">Navigate</div>
-      <button class="menu-close" id="mobileMenuClose" type="button" aria-label="Close navigation menu">&times;</button>
-    </div>
-    <nav class="menu-links" role="navigation" aria-label="Primary">
-      <a class="active" href="/dashboard.html">Dashboard</a>
-      <a href="/record.html">Record</a>
-      <a href="/drinks.html">Drinks</a>
-      <a href="/summary.html">Summary</a>
-      <a href="/settings.html">Settings</a>
-    </nav>
-  </aside>
-</div>
 
 <main class="main">
   <section class="hero">
@@ -145,17 +146,34 @@ body.menu-open{overflow:hidden}
 
 <nav class="nav">
   <div class="nav-inner">
-    <a class="active" href="/dashboard.html">Dashboard</a>
-    <a href="/record.html">Record</a>
-    <a href="/drinks.html">Drinks</a>
-    <a href="/settings.html">Settings</a>
+    <a class="nav-tab active" href="/dashboard.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Board
+    </a>
+    <a class="nav-tab" href="/record.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Record
+    </a>
+    <a class="nav-tab" href="/drinks.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Drinks
+    </a>
+    <a class="nav-tab" href="/summary.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Summary
+    </a>
+    <a class="nav-tab" href="/settings.html">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
   </div>
 </nav>
+
 <div class="confirm-toast" id="removeConfirm" role="alertdialog" aria-live="assertive" aria-label="Remove task confirmation">
-  <div class="confirm-text">Are you sure you want to remove task?</div>
+  <div class="confirm-text">Remove this task from the board?</div>
   <div class="confirm-actions">
     <button class="confirm-btn cancel" id="removeConfirmCancel" type="button">Cancel</button>
-    <button class="confirm-btn yes" id="removeConfirmYes" type="button">Yes</button>
+    <button class="confirm-btn yes" id="removeConfirmYes" type="button">Remove</button>
   </div>
 </div>
 <div class="toast error" id="toast"></div>
@@ -253,9 +271,7 @@ async function removeTask(taskId) {
   });
 }
 
-async function addComment(taskId) {
-  const text = window.prompt('Add comment about shortage or issue:');
-  if (!text || !text.trim()) return;
+async function saveCommentToTask(taskId, text) {
   const ref = doc(db, 'restock_tasks', taskId);
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
@@ -311,15 +327,20 @@ function renderTasks(tasks) {
           </div>
 
           <div class="actions">
-            ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace Bottle</button>
-            <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2 Bottles</button>` : ''}
+            ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace</button>
+            <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2</button>` : ''}
             ${isCompleted ? `<button class="btn primary mini" data-close="1" data-id="${t._id}">Close Task</button>` : ''}
-            <button class="btn soft mini" data-comment="1" data-id="${t._id}">Add Comment</button>
+            <button class="btn soft mini" data-show-comment="${t._id}">Comment</button>
+          </div>
+
+          <div class="comment-row" id="cr-${t._id}" style="display:none">
+            <input class="comment-input" type="text" placeholder="Add shortage note…" maxlength="300" autocomplete="off">
+            <button class="btn soft mini" data-save-comment="${t._id}">Save</button>
           </div>
 
           ${comments.length ? `<div class="comments">${comments.slice(-3).reverse().map((c) => `
             <div class="comment">
-              <div class="meta">Comment by ${escapeHtml(c.authorName || 'Staff')} - ${fmtDate(c.createdAt)}</div>
+              <div class="meta">${escapeHtml(c.authorName || 'Staff')} · ${fmtDate(c.createdAt)}</div>
               <div class="text">${escapeHtml(c.text || '')}</div>
             </div>
           `).join('')}</div>` : ''}
@@ -485,10 +506,35 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  const comment = e.target.closest('[data-comment]');
-  if (comment) {
-    const taskId = comment.getAttribute('data-id');
-    await addComment(taskId);
+  const showComment = e.target.closest('[data-show-comment]');
+  if (showComment) {
+    const id = showComment.getAttribute('data-show-comment');
+    const row = document.getElementById(`cr-${id}`);
+    if (row) {
+      const visible = row.style.display !== 'none';
+      row.style.display = visible ? 'none' : 'flex';
+      if (!visible) row.querySelector('input')?.focus();
+    }
+    return;
+  }
+
+  const saveComment = e.target.closest('[data-save-comment]');
+  if (saveComment) {
+    const id = saveComment.getAttribute('data-save-comment');
+    const row = document.getElementById(`cr-${id}`);
+    const input = row?.querySelector('input');
+    const text = input?.value?.trim();
+    if (!text) return;
+    saveComment.disabled = true;
+    try {
+      await saveCommentToTask(id, text);
+      if (input) input.value = '';
+      if (row) row.style.display = 'none';
+    } catch {
+      showToast('Could not save comment right now.');
+    } finally {
+      saveComment.disabled = false;
+    }
     return;
   }
 
@@ -514,44 +560,6 @@ if (!hasCodeAccess()) {
     taskListEl.innerHTML = '<div class="panel empty">Could not load tasks right now.</div>';
   });
 }
-</script>
-<script>
-(() => {
-  const toggle = document.getElementById('mobileMenuToggle');
-  const overlay = document.getElementById('mobileMenuOverlay');
-  const panel = document.getElementById('mobileMenuPanel');
-  const closeBtn = document.getElementById('mobileMenuClose');
-  if (!toggle || !overlay || !panel || !closeBtn) return;
-
-  function openMenu() {
-    overlay.hidden = false;
-    requestAnimationFrame(() => overlay.classList.add('open'));
-    document.body.classList.add('menu-open');
-    toggle.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeMenu() {
-    overlay.classList.remove('open');
-    document.body.classList.remove('menu-open');
-    toggle.setAttribute('aria-expanded', 'false');
-    window.setTimeout(() => {
-      if (!overlay.classList.contains('open')) overlay.hidden = true;
-    }, 220);
-  }
-
-  toggle.addEventListener('click', () => {
-    if (overlay.hidden) openMenu();
-    else closeMenu();
-  });
-  closeBtn.addEventListener('click', closeMenu);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeMenu();
-  });
-  panel.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !overlay.hidden) closeMenu();
-  });
-})();
 </script>
 </body>
 </html>
