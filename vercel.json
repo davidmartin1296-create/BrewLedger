@@ -1,27 +1,9 @@
 {
-  "name": "BrewLedger",
   "version": 2,
-  "builds": [
+  "crons": [
     {
-      "src": "**/*",
-      "use": "@vercel/static"
+      "path": "/api/cron/analytics-daily",
+      "schedule": "30 4,5 * * *"
     }
-  ],
-  "routes": [
-    { "src": "/images/(.*)",     "dest": "/public/images/$1" },
-    { "src": "/manifest.json",   "dest": "/public/manifest.json" },
-    { "src": "/firebase.js",     "dest": "/firebase.js" },
-    { "src": "/data/(.*)",       "dest": "/data/$1" },
-    { "src": "/welcome.html",    "dest": "/welcome.html" },
-    { "src": "/login.html",      "dest": "/login.html" },
-    { "src": "/signup.html",     "dest": "/signup.html" },
-    { "src": "/bar-select.html", "dest": "/bar-select.html" },
-    { "src": "/dashboard.html",  "dest": "/dashboard.html" },
-    { "src": "/index.html",      "dest": "/dashboard.html" },
-    { "src": "/record.html",     "dest": "/record.html" },
-    { "src": "/drinks.html",     "dest": "/drinks.html" },
-    { "src": "/settings.html",   "dest": "/settings.html" },
-    { "src": "/summary.html",    "dest": "/summary.html" },
-    { "src": "/(.*)",            "dest": "/welcome.html" }
   ]
 }

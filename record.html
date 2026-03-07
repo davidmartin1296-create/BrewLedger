@@ -179,6 +179,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Summary
     </a>
+    <a class="nav-tab" href="/analytics">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="6" y="13" width="3" height="5"/><rect x="11" y="9" width="3" height="9"/><rect x="16" y="6" width="3" height="12"/></svg>
+      Analytics
+    </a>
     <a class="nav-tab" href="/settings.html">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
@@ -192,6 +196,7 @@ import { db } from "./firebase.js";
 import { barStockList, getAllMasterDrinks } from "./data/barStockList.js";
 import { BAR_OPTIONS, DEFAULT_BAR, applyBarHeader, ensureBarOrRedirect, normalizeBar } from "./data/barContext.js";
 import { ensureBarMigration } from "./data/barMigration.js";
+import { getOperationalDateString } from "./data/operationalDay.js";
 
 let drinks = [];
 let selectedDrink = null;
@@ -323,6 +328,22 @@ function initBarSelect() {
   requestBarSelect.value = currentBar || BAR_OPTIONS[0];
 }
 
+async function writeStockRequestEvent({ requestId, itemName, quantity, bar, status, createdAt, operationalDate }) {
+  try {
+    await addDoc(collection(db, 'stockRequestEvents'), {
+      requestId: String(requestId || '').trim() || null,
+      itemName: String(itemName || '').trim(),
+      quantity: Math.max(0, toNum(quantity, 0)),
+      bar: normalizeBar(bar) || DEFAULT_BAR,
+      status: normalizeTaskStatus({ status, neededQty: quantity, replacedQty: 0, outstandingQty: quantity }),
+      createdAt: createdAt || new Date().toISOString(),
+      operationalDate: operationalDate || getOperationalDateString(createdAt || new Date())
+    });
+  } catch (err) {
+    console.warn('stockRequestEvents write failed', err);
+  }
+}
+
 function pickDrink(drink) {
   selectedDrink = drink;
   selectedDrinkId = drink._id;
@@ -365,27 +386,56 @@ async function saveTask() {
     const ref = doc(db, 'restock_tasks', prev.id);
     const collectedQty = Math.max(0, toNum(prev.replacedQty, 0));
     const nextNeeded = Math.max(0, toNum(prev.neededQty, 0)) + qty;
+    const operationalDate = prev.operationalDate || getOperationalDateString(new Date());
+    const nextStatus = collectedQty > 0 ? 'collected' : 'requested';
+    const eventCreatedAt = new Date().toISOString();
     await updateDoc(ref, {
       neededQty: increment(qty),
+      quantity: nextNeeded,
+      itemName,
       outstandingQty: Math.max(0, nextNeeded - collectedQty),
-      status: collectedQty > 0 ? 'collected' : 'requested',
-      updatedAt: new Date().toISOString()
+      status: nextStatus,
+      operationalDate,
+      updatedAt: eventCreatedAt
+    });
+    await writeStockRequestEvent({
+      requestId: prev.id,
+      itemName,
+      quantity: qty,
+      bar: targetBar,
+      status: nextStatus,
+      createdAt: eventCreatedAt,
+      operationalDate
     });
     messageEl.textContent = `${itemName}: added ${qty} bottles to existing ${targetBar} request.`;
     messageEl.style.color = '#86efac';
   } else {
-    await addDoc(collection(db, 'restock_tasks'), {
+    const createdAt = new Date().toISOString();
+    const operationalDate = getOperationalDateString(createdAt);
+    const requestRef = await addDoc(collection(db, 'restock_tasks'), {
       drinkName: itemName,
+      itemName,
       drinkId: selectedDrinkId || null,
       bar: targetBar,
+      quantity: qty,
       neededQty: qty,
       replacedQty: 0,
       outstandingQty: qty,
       comments: [],
       createdBy: null,
       createdByName: userProfile?.name || localStorage.getItem('brew_access_name') || 'Access Code User',
-      createdAt: new Date().toISOString(),
+      createdAt,
+      operationalDate,
       status: 'requested'
+    });
+    await writeStockRequestEvent({
+      requestId: requestRef.id,
+      itemName,
+      quantity: qty,
+      bar: targetBar,
+      status: 'requested',
+      createdAt,
+      operationalDate
     });
     messageEl.textContent = `${itemName}: ${qty} bottles requested for ${targetBar}.`;
     messageEl.style.color = '#86efac';

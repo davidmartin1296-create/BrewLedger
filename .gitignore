@@ -4,3 +4,7 @@ node_modules/
 .DS_Store
 *.log
 .vercel
+.next/
+public/*.html
+public/firebase.js
+public/data/*.js
