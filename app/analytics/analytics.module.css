@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding-bottom: 84px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
   background: transparent;
 }
 
@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px 12px;
+  padding: max(14px, env(safe-area-inset-top)) 16px 12px;
   border-bottom: 1px solid rgba(212, 154, 93, 0.2);
   background: rgba(18, 16, 14, 0.92);
   backdrop-filter: blur(20px);
@@ -224,6 +224,7 @@
   border-top: 1px solid rgba(212, 154, 93, 0.25);
   background: rgba(10, 8, 7, 0.97);
   backdrop-filter: blur(20px);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .navInner {
@@ -234,20 +235,40 @@
 }
 
 .navTab {
-  height: 60px;
+  height: 62px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
   color: rgba(245, 243, 239, 0.38);
   text-decoration: none;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
 
 .navTabActive {
   color: #d49a5d;
+}
+
+.navTabActive svg {
+  filter: drop-shadow(0 0 6px rgba(212, 154, 93, 0.45));
+}
+
+.navTabActive::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #b87333, transparent);
+  border-radius: 1px;
 }
 
 .grid2 {
@@ -280,5 +301,6 @@
 
   .navTab {
     font-size: 8px;
+    height: 62px;
   }
 }
