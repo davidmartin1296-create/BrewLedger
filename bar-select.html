@@ -10,50 +10,192 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,#12100e 45%,#0e0c0a 100%)}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;
+  min-height:100vh;min-height:100dvh;
+  background:
+    linear-gradient(175deg,rgba(10,8,6,.52) 0%,rgba(10,8,6,.9) 100%),
+    url('/images/app-Brews.png') center/cover no-repeat fixed;
+  display:flex;flex-direction:column;
+}
 a,button{-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid #f7d8b8;outline-offset:2px}
-.page{max-width:680px;margin:0 auto;min-height:100vh;min-height:100svh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) 16px 24px;display:flex;align-items:center}
-.card{width:100%;background:linear-gradient(145deg,rgba(184,115,51,.13),rgba(28,25,22,.95));border:1px solid rgba(184,115,51,.38);border-radius:22px;padding:18px;box-shadow:0 20px 44px rgba(0,0,0,.4)}
-.hero{height:120px;border-radius:14px;margin-bottom:12px;background:linear-gradient(165deg,rgba(10,8,6,.34),rgba(10,8,6,.82)),url('/images/app-Brews.png') center/cover no-repeat;border:1px solid rgba(212,154,93,.28);display:flex;align-items:flex-end;padding:10px}
-.hero-txt{font-size:12px;color:#f7d8b8;font-weight:700}
-h1{font-size:25px;font-weight:800;letter-spacing:-.5px}
-.sub{margin-top:6px;font-size:13px;color:rgba(245,243,239,.72);line-height:1.45}
-.current{margin-top:12px;font-size:13px;color:rgba(247,216,184,.9)}
-.grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.btn{position:relative;overflow:hidden;min-height:52px;border-radius:12px;border:1px solid rgba(184,115,51,.5);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 20px rgba(0,0,0,.24);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 10px;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
-.btn::after{content:'';position:absolute;left:10px;right:10px;top:5px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
-.btn:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 14px 26px rgba(0,0,0,.3)}
-.btn:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
-.btn.active{background:linear-gradient(145deg,rgba(184,115,51,.38),rgba(184,115,51,.24));border-color:#da9a5c}
-.row{display:flex;gap:8px;margin-top:14px}
-.action,.ghost{position:relative;overflow:hidden;height:50px;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;flex:1;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
-.action::after,.ghost::after{content:'';position:absolute;left:10px;right:10px;top:5px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
-.action{border:1px solid rgba(212,154,93,.6);background:linear-gradient(145deg,rgba(184,115,51,.35),rgba(184,115,51,.2));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 10px 20px rgba(0,0,0,.28);color:#fff}
-.ghost{border:1px solid rgba(184,115,51,.52);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 20px rgba(0,0,0,.24);color:#f7d8b8}
-.action:hover,.ghost:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 26px rgba(0,0,0,.32)}
-.action:active,.ghost:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
-.msg{margin-top:10px;font-size:13px;color:#fcd34d;min-height:16px}
-@media (max-width:460px){
+
+/* ── Layout ── */
+.page{
+  flex:1;display:flex;flex-direction:column;
+  max-width:520px;margin:0 auto;width:100%;
+  padding:max(32px,env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+}
+
+/* ── Brand header ── */
+.brand-row{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.logo{
+  width:44px;height:44px;border-radius:13px;padding:6px;flex-shrink:0;
+  background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));
+  border:1px solid rgba(212,154,93,.45);
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+}
+.logo img{width:100%;height:100%;object-fit:contain}
+.brand-name{font-size:18px;font-weight:800;letter-spacing:-.35px;line-height:1.1}
+.brand-tag{font-size:11px;color:rgba(245,243,239,.45);margin-top:2px;letter-spacing:.2px}
+
+/* ── Heading ── */
+h1{font-size:30px;font-weight:800;letter-spacing:-.7px;line-height:1.05;margin-bottom:8px}
+.sub{font-size:13px;color:rgba(245,243,239,.58);line-height:1.55;margin-bottom:20px}
+
+/* ── Working-at chip ── */
+.working-at{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(184,115,51,.1);border:1px solid rgba(184,115,51,.28);
+  border-radius:999px;padding:5px 12px 5px 8px;
+  font-size:12px;font-weight:600;color:rgba(245,243,239,.72);
+  margin-bottom:18px;align-self:flex-start;
+}
+.working-dot{
+  width:7px;height:7px;border-radius:50%;background:#b87333;flex-shrink:0;
+  box-shadow:0 0 8px rgba(184,115,51,.7);
+}
+.working-bar{font-weight:800;color:#f7d8b8}
+
+/* ── Bar grid ── */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:24px;
+}
+
+/* ── Bar button ── */
+.btn{
+  position:relative;overflow:hidden;
+  min-height:66px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.05);
+  backdrop-filter:blur(14px) saturate(120%);
+  -webkit-backdrop-filter:blur(14px) saturate(120%);
+  color:rgba(245,243,239,.65);
+  font-family:inherit;cursor:pointer;
+  padding:0 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  transition:border-color .18s,background .18s,color .18s,box-shadow .18s,transform .1s;
+}
+/* top-edge gloss */
+.btn::before{
+  content:'';position:absolute;inset:0 0 auto;height:1px;
+  background:linear-gradient(90deg,transparent 5%,rgba(255,255,255,.18) 50%,transparent 95%);
+  pointer-events:none;
+}
+.btn:active{transform:scale(.96)}
+.btn:not(.active):hover{
+  border-color:rgba(184,115,51,.42);
+  background:rgba(184,115,51,.1);
+  color:#fff;
+}
+.btn.active{
+  border-color:rgba(212,154,93,.65);
+  background:linear-gradient(145deg,rgba(184,115,51,.3),rgba(184,115,51,.14));
+  color:#fff;
+  box-shadow:0 0 0 1px rgba(212,154,93,.3),0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+.btn-name{font-size:15px;font-weight:800;letter-spacing:-.2px}
+
+/* Animated checkmark ring */
+.btn-check{
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid rgba(184,115,51,.28);
+  background:rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .18s,background .18s,box-shadow .18s;
+}
+.btn.active .btn-check{
+  border-color:#d49a5d;
+  background:linear-gradient(135deg,#9b5f2b,#b87333);
+  box-shadow:0 0 10px rgba(184,115,51,.5);
+}
+.btn-check svg{
+  opacity:0;transform:scale(.3) rotate(-20deg);
+  transition:opacity .2s,transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+.btn.active .btn-check svg{opacity:1;transform:scale(1) rotate(0deg)}
+
+/* ── Divider ── */
+.divider{height:1px;background:rgba(255,255,255,.07);margin-bottom:20px}
+
+/* ── Actions ── */
+.continue-btn{
+  position:relative;overflow:hidden;
+  width:100%;height:56px;border-radius:15px;
+  border:1px solid rgba(212,154,93,.62);
+  background:linear-gradient(145deg,rgba(184,115,51,.44),rgba(155,95,43,.32));
+  backdrop-filter:blur(12px) saturate(140%);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 14px 28px rgba(0,0,0,.3);
+  color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .1s,box-shadow .2s,border-color .2s;
+  margin-bottom:10px;
+}
+.continue-btn::after{
+  content:'';position:absolute;left:16px;right:16px;top:5px;height:38%;
+  border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0));
+  pointer-events:none;
+}
+.continue-btn:hover{border-color:rgba(247,216,184,.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 18px 36px rgba(0,0,0,.38)}
+.continue-btn:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.26),0 8px 16px rgba(0,0,0,.26)}
+
+.logout-btn{
+  display:block;width:100%;background:none;border:none;
+  color:rgba(245,243,239,.38);font-size:13px;font-weight:600;font-family:inherit;
+  cursor:pointer;padding:8px;text-align:center;
+  transition:color .15s;
+}
+.logout-btn:hover{color:rgba(245,243,239,.65)}
+
+.msg{font-size:13px;color:#fcd34d;min-height:18px;text-align:center;padding:6px 0}
+
+@media (max-width:400px){
   .grid{grid-template-columns:1fr}
-  .row{flex-direction:column}
+  h1{font-size:26px}
+  .brand-row{margin-bottom:24px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;transform:none!important;animation:none!important}
 }
 </style>
 </head>
 <body>
 <main class="page">
-  <section class="card">
-    <div class="hero"><div class="hero-txt">Shared stock requests across every bar</div></div>
-    <h1>Select Your Bar</h1>
-    <p class="sub">Choose where you are working now. You can switch this at any time from the page header.</p>
-    <p class="current" id="currentBarLabel"></p>
-    <div class="grid" id="barGrid"></div>
-    <div class="row">
-      <button class="action" id="continueBtn" type="button">Continue</button>
-      <button class="ghost" id="logoutBtn" type="button">Log Out</button>
+
+  <div class="brand-row">
+    <div class="logo"><img src="/images/B-Logo.png" alt="Brew-Ledger logo"></div>
+    <div>
+      <div class="brand-name">Brew-Ledger</div>
+      <div class="brand-tag">Bar stock operations</div>
     </div>
-    <div class="msg" id="message"></div>
-  </section>
+  </div>
+
+  <h1>Select Your Bar</h1>
+  <p class="sub">Choose where you're working tonight. You can switch at any time from the page header.</p>
+
+  <div class="working-at">
+    <div class="working-dot"></div>
+    Working at: <span class="working-bar" id="selectionLabel">—</span>
+  </div>
+
+  <div class="grid" id="barGrid"></div>
+
+  <div class="divider"></div>
+
+  <button class="continue-btn" id="continueBtn" type="button">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    Continue to Dashboard
+  </button>
+  <button class="logout-btn" id="logoutBtn" type="button">Log Out</button>
+  <div class="msg" id="message"></div>
+
 </main>
 
 <script type="module">
@@ -74,16 +216,19 @@ const rawNext = params.get('next') || '/dashboard.html';
 const nextPath = rawNext.startsWith('/') ? rawNext : '/dashboard.html';
 const barGridEl = document.getElementById('barGrid');
 const messageEl = document.getElementById('message');
-const currentBarLabelEl = document.getElementById('currentBarLabel');
+const selectionLabelEl = document.getElementById('selectionLabel');
 let selectedBar = getSelectedBar() || DEFAULT_BAR;
+
+const CHECK_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 function renderBarButtons() {
   barGridEl.innerHTML = BAR_OPTIONS.map((bar) => `
     <button class="btn ${selectedBar === bar ? 'active' : ''}" type="button" data-bar="${bar}">
-      ${bar}
+      <span class="btn-name">${bar}</span>
+      <span class="btn-check">${CHECK_SVG}</span>
     </button>
   `).join('');
-  currentBarLabelEl.textContent = `Current selection: ${selectedBar}`;
+  selectionLabelEl.textContent = selectedBar;
 }
 
 renderBarButtons();
@@ -97,7 +242,7 @@ barGridEl.addEventListener('click', (e) => {
 
 document.getElementById('continueBtn').addEventListener('click', () => {
   const nextBar = setSelectedBar(selectedBar);
-  messageEl.textContent = `Bar set to ${nextBar}. Redirecting…`;
+  messageEl.textContent = `Entering ${nextBar}…`;
   window.location.href = nextPath;
 });
 
