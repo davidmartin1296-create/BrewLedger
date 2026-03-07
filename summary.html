@@ -103,6 +103,13 @@ body {
 }
 
 .banner-brand-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.2px; }
+.banner-brand-mark {
+  height: 18px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(167,139,250,0.24));
+}
 
 .banner-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; margin-bottom: 4px; }
 
@@ -110,7 +117,8 @@ body {
 .banner-date { font-size: 13px; color: rgba(255,255,255,0.45); }
 .bar-tools{display:flex;align-items:center;gap:8px}
 .bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(167,139,250,0.18);border:1px solid rgba(167,139,250,0.35);color:#e9ddff;white-space:nowrap}
-.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(167,139,250,0.45);background:rgba(167,139,250,0.12);color:#e9ddff;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
+.bar-switch{position:relative;overflow:hidden;height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(167,139,250,0.52);background:linear-gradient(145deg,rgba(167,139,250,0.24),rgba(167,139,250,0.12));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),0 8px 16px rgba(0,0,0,0.22);color:#e9ddff;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+.bar-switch::after{content:'';position:absolute;left:8px;right:8px;top:3px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
 
 .banner-stats { display: flex; gap: 20px; }
 
@@ -272,13 +280,17 @@ body {
 .reset-info span   { font-size: 12px; color: rgba(255,255,255,0.35); }
 
 .reset-btn {
-  min-height: 44px;
-  padding: 10px 18px; border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
-  background: rgba(239,68,68,0.1); color: var(--red);
+  position: relative; overflow: hidden; min-height: 44px;
+  padding: 10px 18px; border: 1px solid rgba(239,68,68,0.5); border-radius: 10px;
+  background: linear-gradient(145deg,rgba(239,68,68,.24),rgba(220,38,38,.12)); color: #fecaca;
+  backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 10px 20px rgba(0,0,0,.24);
   font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
-  white-space: nowrap; flex-shrink: 0; transition: all 0.2s;
+  white-space: nowrap; flex-shrink: 0; transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.reset-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
+.reset-btn::after { content:''; position:absolute; left:8px; right:8px; top:4px; height:38%; border-radius:999px; background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0)); pointer-events:none; }
+.reset-btn:hover { border-color: rgba(254,202,202,.75); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px rgba(0,0,0,.3); }
+.reset-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 8px rgba(0,0,0,.24), 0 8px 14px rgba(0,0,0,.24); }
 
 /* ── Advert ── */
 .advert { text-align: center; padding: 8px 16px 8px; }
@@ -340,18 +352,26 @@ body {
 .modal-sheet p  { font-size: 14px; color: rgba(255,255,255,0.44); margin-bottom: 22px; line-height: 1.5; }
 .modal-btns { display: flex; flex-direction: column; gap: 10px; }
 .modal-confirm {
-  width: 100%; padding: 15px; border: none; border-radius: 12px;
-  background: linear-gradient(135deg, rgba(239,68,68,0.85), rgba(220,38,38,0.85));
+  position: relative; overflow: hidden; width: 100%; padding: 15px; border: 1px solid rgba(239,68,68,.52); border-radius: 12px;
+  background: linear-gradient(145deg, rgba(239,68,68,0.26), rgba(220,38,38,0.14));
+  backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 10px 20px rgba(0,0,0,.24);
   color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s; box-shadow: 0 4px 16px rgba(239,68,68,0.28);
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.modal-confirm:hover { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.modal-confirm::after { content:''; position:absolute; left:10px; right:10px; top:5px; height:38%; border-radius:999px; background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0)); pointer-events:none; }
+.modal-confirm:hover { border-color: rgba(254,202,202,.75); box-shadow: inset 0 1px 0 rgba(255,255,255,.32), 0 14px 24px rgba(0,0,0,.3); }
 .modal-cancel {
-  width: 100%; padding: 15px; border: 1px solid rgba(167,139,250,0.14); border-radius: 12px;
-  background: rgba(167,139,250,0.06); color: rgba(255,255,255,0.62);
-  font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s;
+  position: relative; overflow: hidden; width: 100%; padding: 15px; border: 1px solid rgba(167,139,250,0.42); border-radius: 12px;
+  background: linear-gradient(145deg, rgba(167,139,250,0.2), rgba(167,139,250,0.1)); color: rgba(255,255,255,0.8);
+  backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 20px rgba(0,0,0,.24);
+  font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.modal-cancel:hover { background: rgba(167,139,250,0.12); }
+.modal-cancel::after { content:''; position:absolute; left:10px; right:10px; top:5px; height:38%; border-radius:999px; background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0)); pointer-events:none; }
+.modal-cancel:hover { border-color: rgba(196,181,253,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px rgba(0,0,0,.3); }
+.bar-switch:hover { border-color: rgba(196,181,253,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 24px rgba(0,0,0,.3); }
+.modal-confirm:active,.modal-cancel:active,.bar-switch:active { transform: translateY(1px); box-shadow: inset 0 2px 8px rgba(0,0,0,.24), 0 8px 14px rgba(0,0,0,.24); }
 .modal-overlay.fade-in  { animation: mFadeIn 0.2s ease both; }
 .modal-overlay.fade-out { animation: mFadeOut 0.22s ease both; }
 @keyframes mFadeIn  { from { opacity: 0; } to { opacity: 1; } }
@@ -368,6 +388,7 @@ body {
 }
 
 @media (max-width:420px) {
+  .banner-brand-mark { height: 16px; max-width: 114px; }
   .usage-row { flex-wrap: wrap; align-items: flex-start; gap: 8px; }
   .usage-name { width: 100%; white-space: normal; line-height: 1.3; }
   .usage-cat { order: 2; }
@@ -412,6 +433,7 @@ body {
   <div class="banner-content">
     <div class="banner-brand">
       <div class="banner-brand-icon"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
+      <img class="banner-brand-mark" src="/images/brewhemia-title.png" alt="Brewhemia title">
       <span class="banner-brand-name">Brew-Ledger</span>
     </div>
     <div class="banner-title">Night Summary</div>

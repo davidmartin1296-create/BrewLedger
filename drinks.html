@@ -28,10 +28,13 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1}
+.brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.brand-mark{height:18px;width:auto;max-width:130px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(212,154,93,.28));flex-shrink:1}
+.brand-title{font-size:17px;font-weight:800;letter-spacing:-.4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .header-meta{display:flex;align-items:center;gap:8px}
 .bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
-.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
+.bar-switch{position:relative;overflow:hidden;height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.52);background:linear-gradient(145deg,rgba(184,115,51,.22),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 16px rgba(0,0,0,.22);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+.bar-switch::after{content:'';position:absolute;left:8px;right:8px;top:3px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -49,17 +52,21 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .field{height:48px;width:100%;padding:0 14px;border-radius:11px;border:1px solid rgba(255,255,255,.14);background:#1f1b17;color:#fff;font-size:16px;font-family:inherit;margin-bottom:10px}
 .field::placeholder{color:rgba(255,255,255,.3)}
 .field:focus{outline:none;border-color:rgba(184,115,51,.65)}
-.btn{height:48px;border-radius:11px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
-.btn.secondary{margin-top:0;border:1px solid rgba(184,115,51,.42);background:rgba(184,115,51,.14);color:#f7d8b8}
+.btn{position:relative;overflow:hidden;height:48px;border-radius:11px;border:1px solid rgba(212,154,93,.58);background:linear-gradient(145deg,rgba(184,115,51,.35),rgba(184,115,51,.2));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 10px 20px rgba(0,0,0,.28);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.btn::after{content:'';position:absolute;left:10px;right:10px;top:4px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0));pointer-events:none}
+.btn.secondary{margin-top:0;border:1px solid rgba(184,115,51,.52);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));color:#f7d8b8}
 
 /* ── List ── */
 .list{display:grid;gap:8px}
 .item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px}
 .item .name{flex:1;font-size:14px;font-weight:700;min-width:0}
 .item .cat{font-size:11px;color:rgba(245,243,239,.55);margin-top:2px}
-.item button{min-height:44px;padding:0 14px;border-radius:9px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.12);color:#fecaca;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.item button{position:relative;overflow:hidden;min-height:44px;padding:0 14px;border-radius:9px;border:1px solid rgba(239,68,68,.5);background:linear-gradient(145deg,rgba(239,68,68,.24),rgba(220,38,38,.12));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 14px rgba(0,0,0,.24);color:#fecaca;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+.item button::after{content:'';position:absolute;left:8px;right:8px;top:4px;height:38%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));pointer-events:none}
 .pill{font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap;flex-shrink:0}
 .msg{margin-top:10px;font-size:13px;min-height:16px;color:#86efac}
+.bar-switch:hover,.btn:hover,.item button:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 24px rgba(0,0,0,.3)}
+.bar-switch:active,.btn:active,.item button:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
 
 /* ── Bottom nav ── */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(10,8,7,.97);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
@@ -80,6 +87,8 @@ a,button,input{-webkit-tap-highlight-color:transparent}
   .card{padding:12px}
   .item{flex-wrap:wrap;align-items:flex-start}
   .item .name{flex-basis:100%}
+  .brand-mark{height:16px;max-width:102px}
+  .brand-title{font-size:15px}
   .nav-tab{font-size:8px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -90,7 +99,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <body>
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
-  <div class="brand">Drinks List</div>
+  <div class="brand">
+    <img class="brand-mark" src="/images/brewhemia-title.png" alt="Brewhemia title">
+    <span class="brand-title">Drinks List</span>
+  </div>
   <div class="header-meta">
     <div class="bar-pill" id="currentBarChip">Bar: —</div>
     <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>

@@ -26,6 +26,15 @@
   border: 1px solid rgba(212, 154, 93, 0.45);
 }
 
+.brandMark {
+  height: 18px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(212, 154, 93, 0.28));
+  flex-shrink: 1;
+}
+
 .titleWrap {
   min-width: 0;
   flex: 1;
@@ -61,9 +70,14 @@
 }
 
 .barSwitch {
+  position: relative;
+  overflow: hidden;
   height: 32px;
-  border: 1px solid rgba(184, 115, 51, 0.45);
-  background: rgba(184, 115, 51, 0.12);
+  border: 1px solid rgba(184, 115, 51, 0.52);
+  background: linear-gradient(145deg, rgba(184, 115, 51, 0.22), rgba(184, 115, 51, 0.1));
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 16px rgba(0, 0, 0, 0.22);
   color: #f7d8b8;
   font-size: 11px;
   font-weight: 700;
@@ -72,6 +86,29 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.barSwitch::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 3px;
+  height: 40%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.barSwitch:hover {
+  border-color: rgba(247, 216, 184, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 14px 24px rgba(0, 0, 0, 0.3);
+}
+
+.barSwitch:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.24), 0 8px 14px rgba(0, 0, 0, 0.24);
 }
 
 .main {
@@ -293,6 +330,11 @@
 
   .barSwitch {
     display: none;
+  }
+
+  .brandMark {
+    height: 16px;
+    max-width: 102px;
   }
 
   .summaryGrid {

@@ -29,11 +29,15 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1;min-width:0}
+.brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.brand-mark{height:18px;width:auto;max-width:130px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(212,154,93,.28));flex-shrink:1}
+.brand-title{font-size:17px;font-weight:800;letter-spacing:-.4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .header-meta{display:flex;align-items:center;gap:8px;min-width:0}
 .user{font-size:12px;color:rgba(245,243,239,.58);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
 .bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
-.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
+.bar-switch{position:relative;overflow:hidden;height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.52);background:linear-gradient(145deg,rgba(184,115,51,.22),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 16px rgba(0,0,0,.22);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease}
+.bar-switch::after{content:'';position:absolute;left:8px;right:8px;top:3px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.bar-switch:active{transform:translateY(1px)}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -48,8 +52,9 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:5px}
 .panel p{font-size:13px;color:rgba(245,243,239,.66);line-height:1.55}
 .view-switch{display:flex;gap:8px;margin-top:12px}
-.view-btn{flex:1;min-height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#f7d8b8;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
-.view-btn.active{background:linear-gradient(135deg,#9b5f2b,var(--copper));border-color:#ca8b4f;color:#fff}
+.view-btn{position:relative;overflow:hidden;flex:1;min-height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.5);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 16px rgba(0,0,0,.22);color:#f7d8b8;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.view-btn::after{content:'';position:absolute;left:8px;right:8px;top:4px;height:42%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.view-btn.active{background:linear-gradient(145deg,rgba(184,115,51,.38),rgba(184,115,51,.24));border-color:#ca8b4f;color:#fff}
 
 /* ── Task list ── */
 .task-list{display:grid;gap:12px}
@@ -76,9 +81,10 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .stat .k{font-size:10px;color:rgba(245,243,239,.52);letter-spacing:.4px;text-transform:uppercase}
 .stat .v{font-size:22px;font-weight:800;margin-top:3px;line-height:1}
 .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.btn{min-height:46px;padding:0 14px;border-radius:11px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:#2b261f;font-family:inherit}
-.btn.primary{background:linear-gradient(135deg,#9b5f2b,var(--copper));border-color:#ca8b4f}
-.btn.soft{background:rgba(184,115,51,.12);border-color:rgba(184,115,51,.35);color:#f7d8b8}
+.btn{position:relative;overflow:hidden;min-height:46px;padding:0 14px;border-radius:11px;border:1px solid rgba(184,115,51,.5);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 20px rgba(0,0,0,.24);font-size:13px;font-weight:700;cursor:pointer;color:#f7d8b8;font-family:inherit;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.btn::after{content:'';position:absolute;left:10px;right:10px;top:4px;height:42%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.btn.primary{background:linear-gradient(145deg,rgba(184,115,51,.38),rgba(184,115,51,.24));border-color:#ca8b4f;color:#fff}
+.btn.soft{background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));border-color:rgba(184,115,51,.5);color:#f7d8b8}
 .btn.mini{min-height:44px;padding:0 12px;font-size:12px}
 
 /* ── Inline comment ── */
@@ -101,9 +107,12 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .confirm-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 .confirm-text{font-size:14px;font-weight:700;line-height:1.45;color:#fff}
 .confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.confirm-btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid transparent;background:#2b261f;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-.confirm-btn.yes{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.45);color:#fecaca}
-.confirm-btn.cancel{background:rgba(184,115,51,.14);border-color:rgba(184,115,51,.4);color:#f7d8b8}
+.confirm-btn{position:relative;overflow:hidden;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid rgba(184,115,51,.5);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 20px rgba(0,0,0,.24);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.confirm-btn::after{content:'';position:absolute;left:8px;right:8px;top:4px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.confirm-btn.yes{background:linear-gradient(145deg,rgba(239,68,68,.24),rgba(220,38,38,.14));border-color:rgba(239,68,68,.5);color:#fecaca}
+.confirm-btn.cancel{background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));border-color:rgba(184,115,51,.5);color:#f7d8b8}
+.bar-switch:hover,.view-btn:hover,.btn:hover,.confirm-btn:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 24px rgba(0,0,0,.3)}
+.bar-switch:active,.view-btn:active,.btn:active,.confirm-btn:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
 
 /* ── Toast ── */
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;max-width:min(92vw,420px);padding:12px 16px;border-radius:11px;color:#fff;font-size:13px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:opacity .2s ease,transform .2s ease;z-index:121}
@@ -126,6 +135,8 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
   .hero h1{font-size:19px}
   .panel{padding:12px}
   .name{font-size:14px}
+  .brand-mark{height:16px;max-width:102px}
+  .brand-title{font-size:15px}
   .nav-tab{font-size:8px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -136,7 +147,10 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 <body>
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
-  <div class="brand">Dashboard</div>
+  <div class="brand">
+    <img class="brand-mark" src="/images/brewhemia-title.png" alt="Brewhemia title">
+    <span class="brand-title">Dashboard</span>
+  </div>
   <div class="header-meta">
     <div class="user" id="userName">—</div>
     <div class="bar-pill" id="currentBarChip">Bar: —</div>

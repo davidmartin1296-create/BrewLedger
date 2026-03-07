@@ -21,11 +21,18 @@ h1{font-size:25px;font-weight:800;letter-spacing:-.5px}
 .sub{margin-top:6px;font-size:13px;color:rgba(245,243,239,.72);line-height:1.45}
 .current{margin-top:12px;font-size:13px;color:rgba(247,216,184,.9)}
 .grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.btn{min-height:52px;border-radius:12px;border:1px solid rgba(184,115,51,.38);background:rgba(184,115,51,.1);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 10px}
-.btn.active{background:linear-gradient(135deg,#9b5f2b,#b87333);border-color:#da9a5c}
+.btn{position:relative;overflow:hidden;min-height:52px;border-radius:12px;border:1px solid rgba(184,115,51,.5);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 20px rgba(0,0,0,.24);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 10px;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.btn::after{content:'';position:absolute;left:10px;right:10px;top:5px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.btn:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 14px 26px rgba(0,0,0,.3)}
+.btn:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
+.btn.active{background:linear-gradient(145deg,rgba(184,115,51,.38),rgba(184,115,51,.24));border-color:#da9a5c}
 .row{display:flex;gap:8px;margin-top:14px}
-.action{height:50px;border-radius:12px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;flex:1}
-.ghost{height:50px;border-radius:12px;border:1px solid rgba(184,115,51,.4);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;flex:1}
+.action,.ghost{position:relative;overflow:hidden;height:50px;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;flex:1;transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.action::after,.ghost::after{content:'';position:absolute;left:10px;right:10px;top:5px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0));pointer-events:none}
+.action{border:1px solid rgba(212,154,93,.6);background:linear-gradient(145deg,rgba(184,115,51,.35),rgba(184,115,51,.2));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 10px 20px rgba(0,0,0,.28);color:#fff}
+.ghost{border:1px solid rgba(184,115,51,.52);background:linear-gradient(145deg,rgba(184,115,51,.2),rgba(184,115,51,.1));backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 20px rgba(0,0,0,.24);color:#f7d8b8}
+.action:hover,.ghost:hover{border-color:rgba(247,216,184,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 26px rgba(0,0,0,.32)}
+.action:active,.ghost:active{transform:translateY(1px);box-shadow:inset 0 2px 8px rgba(0,0,0,.24),0 8px 14px rgba(0,0,0,.24)}
 .msg{margin-top:10px;font-size:13px;color:#fcd34d;min-height:16px}
 @media (max-width:460px){
   .grid{grid-template-columns:1fr}

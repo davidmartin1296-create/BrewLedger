@@ -152,6 +152,7 @@ export default function AnalyticsPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <img className={styles.logo} src="/images/B-Logo.png" alt="Brew-Ledger" />
+        <img className={styles.brandMark} src="/images/brewhemia-title.png" alt="Brewhemia title" />
         <div className={styles.titleWrap}>
           <h1 className={styles.title}>Analytics</h1>
           <p className={styles.subtitle}>Usage insights across all bars</p>
