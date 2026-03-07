@@ -165,12 +165,12 @@ export default function AnalyticsPage() {
       </header>
 
       <main className={styles.main}>
-        {loading ? <section className={styles.card}><div className={styles.loading}>Loading analytics…</div></section> : null}
-        {!loading && error ? <section className={styles.card}><div className={styles.error}>{error}</div></section> : null}
+        {loading ? <section className={`${styles.card} panel`}><div className={styles.loading}>Loading analytics…</div></section> : null}
+        {!loading && error ? <section className={`${styles.card} panel`}><div className={styles.error}>{error}</div></section> : null}
 
         {!loading && !error ? (
           <>
-            <section className={styles.card}>
+            <section className={`${styles.card} panel`}>
               <div className={styles.cardHeader}>
                 <h2 className={styles.cardTitle}>Operational Day Summary</h2>
                 <span className={styles.cardMeta}>{dashboard?.operationalDaySummary?.label || "—"}</span>
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
             </section>
 
             <section className={styles.grid2}>
-              <div className={styles.card}>
+              <div className={`${styles.card} panel`}>
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>Bar Usage (Last 7 Days)</h2>
                 </div>
@@ -231,7 +231,7 @@ export default function AnalyticsPage() {
                 )}
               </div>
 
-              <div className={styles.card}>
+              <div className={`${styles.card} panel`}>
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>Top Requested Items (Last 7 Days)</h2>
                 </div>
@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
             </section>
 
             <section className={styles.grid2}>
-              <div className={styles.card}>
+              <div className={`${styles.card} panel`}>
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>Weekly Trends</h2>
                 </div>
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
                 )}
               </div>
 
-              <div className={styles.card}>
+              <div className={`${styles.card} panel`}>
                 <div className={styles.cardHeader}>
                   <h2 className={styles.cardTitle}>Bar Demand Trends (Last 30 Days)</h2>
                 </div>
@@ -321,7 +321,7 @@ export default function AnalyticsPage() {
               </div>
             </section>
 
-            <section className={styles.card}>
+            <section className={`${styles.card} panel`}>
               <div className={styles.cardHeader}>
                 <h2 className={styles.cardTitle}>Outstanding Requests</h2>
                 <span className={styles.cardMeta}>Status: not completed</span>

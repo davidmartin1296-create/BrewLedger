@@ -8,7 +8,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="app-container">
+          <div className="app-background" aria-hidden="true" />
+          <main className="app-content">{children}</main>
+        </div>
+      </body>
     </html>
   );
 }
