@@ -30,7 +30,10 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
 .brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1;min-width:0}
+.header-meta{display:flex;align-items:center;gap:8px;min-width:0}
 .user{font-size:12px;color:rgba(245,243,239,.58);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
+.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -44,9 +47,14 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .panel{background:linear-gradient(145deg,rgba(184,115,51,.1),var(--surface));border:1px solid var(--border);border-radius:18px;padding:16px}
 .panel h2{font-size:15px;font-weight:800;letter-spacing:.2px;margin-bottom:5px}
 .panel p{font-size:13px;color:rgba(245,243,239,.66);line-height:1.55}
+.view-switch{display:flex;gap:8px;margin-top:12px}
+.view-btn{flex:1;min-height:42px;border-radius:10px;border:1px solid rgba(184,115,51,.35);background:rgba(184,115,51,.1);color:#f7d8b8;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.view-btn.active{background:linear-gradient(135deg,#9b5f2b,var(--copper));border-color:#ca8b4f;color:#fff}
 
 /* ── Task list ── */
 .task-list{display:grid;gap:12px}
+.bar-group{display:grid;gap:12px}
+.bar-group-head{font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#f6d7b6}
 .task-swipe{position:relative;border-radius:16px;overflow:hidden}
 .task-remove-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:linear-gradient(135deg,rgba(239,68,68,.82),rgba(185,28,28,.78));color:#fff;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
 .task-track{position:relative;z-index:1;transition:transform .2s ease;will-change:transform}
@@ -56,7 +64,9 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 .task.amber{border-color:rgba(245,158,11,.5);box-shadow:inset 0 0 0 1px rgba(245,158,11,.18)}
 .task.green{border-color:rgba(34,197,94,.5);box-shadow:inset 0 0 0 1px rgba(34,197,94,.18)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.name-wrap{min-width:0;flex:1}
 .name{font-size:16px;font-weight:800;letter-spacing:-.3px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-bar{margin-top:2px;font-size:11px;color:rgba(245,243,239,.56)}
 .status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
 .status.red{background:rgba(239,68,68,.18);color:#fda4af}
 .status.amber{background:rgba(245,158,11,.18);color:#fcd34d}
@@ -127,19 +137,27 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Dashboard</div>
-  <div class="user" id="userName">—</div>
+  <div class="header-meta">
+    <div class="user" id="userName">—</div>
+    <div class="bar-pill" id="currentBarChip">Bar: —</div>
+    <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>
+  </div>
 </header>
 
 <main class="main">
   <section class="hero">
     <div>
       <h1>Tonight's Restock Board</h1>
-      <p>Track what is missing, what is replaced, and what still needs action.</p>
+      <p id="heroCopy">Track what is missing, what is collected, and what still needs action.</p>
     </div>
   </section>
   <section class="panel">
     <h2>Outstanding Restock Tasks</h2>
-    <p>Live tasks shared across the team. Replace bottles and log shortage notes in real time.</p>
+    <p id="panelCopy">Live tasks shared across the team. Collect stock and complete requests in real time.</p>
+    <div class="view-switch">
+      <button class="view-btn active" id="viewCurrentBtn" type="button">Current Bar</button>
+      <button class="view-btn" id="viewAllBtn" type="button">All Bars</button>
+    </div>
   </section>
   <section class="task-list" id="taskList"></section>
 </main>
@@ -181,14 +199,31 @@ a,button,input,textarea{-webkit-tap-highlight-color:transparent}
 <script type="module">
 import { collection, doc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
+import {
+  BAR_OPTIONS,
+  DEFAULT_BAR,
+  applyBarHeader,
+  ensureBarOrRedirect,
+  getBoardMode,
+  normalizeBar,
+  setBoardMode
+} from "./data/barContext.js";
+import { ensureBarMigration } from "./data/barMigration.js";
 
 const taskListEl = document.getElementById('taskList');
 const userNameEl = document.getElementById('userName');
+const heroCopyEl = document.getElementById('heroCopy');
+const panelCopyEl = document.getElementById('panelCopy');
+const viewCurrentBtn = document.getElementById('viewCurrentBtn');
+const viewAllBtn = document.getElementById('viewAllBtn');
 const removeConfirmEl = document.getElementById('removeConfirm');
 const removeConfirmYesEl = document.getElementById('removeConfirmYes');
 const removeConfirmCancelEl = document.getElementById('removeConfirmCancel');
 const toastEl = document.getElementById('toast');
 let currentProfile = null;
+let currentBar = null;
+let boardMode = getBoardMode();
+let currentTasks = [];
 let tasksUnsub = null;
 let pendingRemoveTaskId = null;
 let toastTimer = null;
@@ -203,6 +238,18 @@ function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
 
+function toNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function createdAtMs(task) {
+  const v = task?.createdAt;
+  if (v?.toDate) return v.toDate().getTime();
+  const n = new Date(v || 0).getTime();
+  return Number.isFinite(n) ? n : 0;
+}
+
 function fmtDate(val) {
   if (!val) return '--';
   if (typeof val === 'string') return new Date(val).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -210,19 +257,50 @@ function fmtDate(val) {
   return '--';
 }
 
-function cardClass(needed, replaced, outstanding) {
+function resolveTaskBar(task) {
+  return normalizeBar(task?.bar) || DEFAULT_BAR;
+}
+
+function normalizeTaskStatus(task) {
+  const raw = String(task?.status || '').trim().toLowerCase();
+  const needed = Math.max(0, toNum(task?.neededQty, 0));
+  const collected = Math.max(0, toNum(task?.replacedQty, 0));
+  const outstanding = Math.max(0, toNum(task?.outstandingQty, needed - collected));
+  if (raw === 'requested' || raw === 'collected' || raw === 'completed') return raw;
+  if (raw === 'active') return collected > 0 ? 'collected' : 'requested';
+  if (raw === 'complete') return 'collected';
+  if (raw === 'closed') return 'completed';
+  if (outstanding <= 0) return 'collected';
+  return collected > 0 ? 'collected' : 'requested';
+}
+
+function cardClass(status, outstanding) {
   if (outstanding <= 0) return 'green';
-  if (replaced > 0 && replaced < needed) return 'amber';
+  if (status === 'requested') return 'red';
+  if (status === 'collected') return 'amber';
   return 'red';
 }
 
-function statusLabel(needed, replaced, outstanding) {
-  if (outstanding <= 0) return ['Completed', 'green'];
-  if (replaced > 0 && replaced < needed) return ['Partially Replaced', 'amber'];
-  return ['Shortage', 'red'];
+function statusLabel(status, outstanding) {
+  if (outstanding <= 0) return ['Ready To Complete', 'green'];
+  if (status === 'collected') return ['Collected', 'amber'];
+  return ['Requested', 'red'];
 }
 
-async function replaceQty(taskId, delta) {
+function updateModeButtons() {
+  viewCurrentBtn.classList.toggle('active', boardMode === 'current');
+  viewAllBtn.classList.toggle('active', boardMode === 'all');
+}
+
+function setBoardView(mode) {
+  if (!currentBar) return;
+  boardMode = setBoardMode(mode);
+  updateModeButtons();
+  panelCopyEl.textContent = `Current mode: ${boardMode === 'all' ? 'All Bars' : currentBar}. Collect items, then mark completed when fulfilled.`;
+  renderTasks(currentTasks);
+}
+
+async function collectQty(taskId, delta) {
   const ref = doc(db, 'restock_tasks', taskId);
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
@@ -235,13 +313,13 @@ async function replaceQty(taskId, delta) {
     tx.update(ref, {
       replacedQty: nextReplaced,
       outstandingQty: outstanding,
-      status: outstanding === 0 ? 'complete' : 'active',
+      status: nextReplaced > 0 ? 'collected' : 'requested',
       updatedAt: new Date().toISOString()
     });
   });
 }
 
-async function closeTask(taskId) {
+async function completeTask(taskId) {
   const ref = doc(db, 'restock_tasks', taskId);
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
@@ -250,10 +328,10 @@ async function closeTask(taskId) {
     const needed = Math.max(0, Number(t.neededQty || 0));
     const replaced = Math.max(0, Number(t.replacedQty || 0));
     const outstanding = Math.max(0, needed - replaced);
-    const isCompleted = outstanding <= 0 || t.status === 'complete';
+    const isCompleted = outstanding <= 0;
     if (!isCompleted) return;
     tx.update(ref, {
-      status: 'closed',
+      status: 'completed',
       updatedAt: new Date().toISOString()
     });
   });
@@ -265,7 +343,7 @@ async function removeTask(taskId) {
     const snap = await tx.get(ref);
     if (!snap.exists()) return;
     tx.update(ref, {
-      status: 'closed',
+      status: 'completed',
       updatedAt: new Date().toISOString()
     });
   });
@@ -288,66 +366,100 @@ async function saveCommentToTask(taskId, text) {
   });
 }
 
+function renderTaskCard(t) {
+  const comments = Array.isArray(t.comments) ? t.comments : [];
+  const cls = cardClass(t.status, t.outstandingQty);
+  const [label, pillCls] = statusLabel(t.status, t.outstandingQty);
+  const showCollect = t.outstandingQty > 0;
+  const canComplete = t.outstandingQty === 0;
+  return `
+    <div class="task-swipe" data-task-id="${t._id}">
+      <div class="task-remove-bg">Remove</div>
+      <article class="task ${cls} task-track" data-task-id="${t._id}">
+        <div class="row">
+          <div class="name-wrap">
+            <div class="name">${escapeHtml(t.drinkName || 'Unknown')}</div>
+            <div class="task-bar">${escapeHtml(t.bar || DEFAULT_BAR)}</div>
+          </div>
+          <span class="status ${pillCls}">${label}</span>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Needed</div><div class="v">${t.neededQty}</div></div>
+          <div class="stat"><div class="k">Collected</div><div class="v">${t.replacedQty}</div></div>
+          <div class="stat"><div class="k">Outstanding</div><div class="v">${t.outstandingQty}</div></div>
+        </div>
+
+        <div class="actions">
+          ${showCollect ? `<button class="btn primary mini" data-collect="1" data-id="${t._id}">+ Collect</button>
+          <button class="btn soft mini" data-collect="2" data-id="${t._id}">+2</button>` : ''}
+          ${canComplete ? `<button class="btn primary mini" data-complete="1" data-id="${t._id}">Mark Completed</button>` : ''}
+          <button class="btn soft mini" data-show-comment="${t._id}">Comment</button>
+        </div>
+
+        <div class="comment-row" id="cr-${t._id}" style="display:none">
+          <input class="comment-input" type="text" placeholder="Add shortage note…" maxlength="300" autocomplete="off">
+          <button class="btn soft mini" data-save-comment="${t._id}">Save</button>
+        </div>
+
+        ${comments.length ? `<div class="comments">${comments.slice(-3).reverse().map((c) => `
+          <div class="comment">
+            <div class="meta">${escapeHtml(c.authorName || 'Staff')} · ${fmtDate(c.createdAt)}</div>
+            <div class="text">${escapeHtml(c.text || '')}</div>
+          </div>
+        `).join('')}</div>` : ''}
+      </article>
+    </div>
+  `;
+}
+
 function renderTasks(tasks) {
-  const visibleTasks = tasks.filter((t) => t.status !== 'closed');
-  const sorted = visibleTasks.slice().sort((a, b) => {
-    const av = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
-    const bv = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
-    return bv - av;
+  currentTasks = tasks.slice();
+  const normalized = tasks.map((t) => {
+    const neededQty = Math.max(0, toNum(t.neededQty, 0));
+    const replacedQty = Math.max(0, toNum(t.replacedQty, 0));
+    const outstandingQty = Math.max(0, toNum(t.outstandingQty, neededQty - replacedQty));
+    return {
+      ...t,
+      bar: resolveTaskBar(t),
+      status: normalizeTaskStatus(t),
+      neededQty,
+      replacedQty,
+      outstandingQty
+    };
   });
 
-  if (sorted.length === 0) {
-    taskListEl.innerHTML = '<div class="panel empty">No open restock tasks right now.</div>';
+  const openTasks = normalized.filter((t) => t.status !== 'completed');
+  const sortByRecent = (a, b) => createdAtMs(b) - createdAtMs(a);
+
+  if (boardMode === 'current') {
+    const currentTasksOnly = openTasks.filter((t) => t.bar === currentBar).sort(sortByRecent);
+    if (!currentTasksOnly.length) {
+      taskListEl.innerHTML = `<div class="panel empty">No open restock tasks for ${escapeHtml(currentBar)} right now.</div>`;
+      openSwipeEl = null;
+      return;
+    }
+    taskListEl.innerHTML = currentTasksOnly.map((t) => renderTaskCard(t)).join('');
     openSwipeEl = null;
     return;
   }
 
-  taskListEl.innerHTML = sorted.map((t) => {
-    const needed = Math.max(0, Number(t.neededQty || 0));
-    const replaced = Math.max(0, Number(t.replacedQty || 0));
-    const outstanding = Math.max(0, needed - replaced);
-    const isCompleted = outstanding <= 0 || t.status === 'complete';
-    const cls = cardClass(needed, replaced, outstanding);
-    const [label, pillCls] = statusLabel(needed, replaced, outstanding);
-    const comments = Array.isArray(t.comments) ? t.comments : [];
+  const grouped = BAR_OPTIONS
+    .map((bar) => ({ bar, items: openTasks.filter((t) => t.bar === bar).sort(sortByRecent) }))
+    .filter((group) => group.items.length);
 
-    return `
-      <div class="task-swipe" data-task-id="${t._id}">
-        <div class="task-remove-bg">Remove</div>
-        <article class="task ${cls} task-track" data-task-id="${t._id}">
-          <div class="row">
-            <div class="name">${escapeHtml(t.drinkName || 'Unknown')}</div>
-            <span class="status ${pillCls}">${label}</span>
-          </div>
+  if (!grouped.length) {
+    taskListEl.innerHTML = '<div class="panel empty">No open restock tasks across bars right now.</div>';
+    openSwipeEl = null;
+    return;
+  }
 
-          <div class="stats">
-            <div class="stat"><div class="k">Needed</div><div class="v">${needed}</div></div>
-            <div class="stat"><div class="k">Replaced</div><div class="v">${replaced}</div></div>
-            <div class="stat"><div class="k">Outstanding</div><div class="v">${outstanding}</div></div>
-          </div>
-
-          <div class="actions">
-            ${!isCompleted ? `<button class="btn primary mini" data-replace="1" data-id="${t._id}">+ Replace</button>
-            <button class="btn soft mini" data-replace="2" data-id="${t._id}">+2</button>` : ''}
-            ${isCompleted ? `<button class="btn primary mini" data-close="1" data-id="${t._id}">Close Task</button>` : ''}
-            <button class="btn soft mini" data-show-comment="${t._id}">Comment</button>
-          </div>
-
-          <div class="comment-row" id="cr-${t._id}" style="display:none">
-            <input class="comment-input" type="text" placeholder="Add shortage note…" maxlength="300" autocomplete="off">
-            <button class="btn soft mini" data-save-comment="${t._id}">Save</button>
-          </div>
-
-          ${comments.length ? `<div class="comments">${comments.slice(-3).reverse().map((c) => `
-            <div class="comment">
-              <div class="meta">${escapeHtml(c.authorName || 'Staff')} · ${fmtDate(c.createdAt)}</div>
-              <div class="text">${escapeHtml(c.text || '')}</div>
-            </div>
-          `).join('')}</div>` : ''}
-        </article>
-      </div>
-    `;
-  }).join('');
+  taskListEl.innerHTML = grouped.map((group) => `
+    <section class="bar-group">
+      <div class="bar-group-head">${escapeHtml(group.bar)}</div>
+      ${group.items.map((t) => renderTaskCard(t)).join('')}
+    </section>
+  `).join('');
   openSwipeEl = null;
 }
 
@@ -497,12 +609,12 @@ removeConfirmYesEl?.addEventListener('click', async () => {
 });
 
 document.addEventListener('click', async (e) => {
-  const replace = e.target.closest('[data-replace]');
-  if (replace) {
-    const taskId = replace.getAttribute('data-id');
-    const delta = Number(replace.getAttribute('data-replace') || 1);
-    replace.disabled = true;
-    try { await replaceQty(taskId, delta); } finally { replace.disabled = false; }
+  const collect = e.target.closest('[data-collect]');
+  if (collect) {
+    const taskId = collect.getAttribute('data-id');
+    const delta = Number(collect.getAttribute('data-collect') || 1);
+    collect.disabled = true;
+    try { await collectQty(taskId, delta); } finally { collect.disabled = false; }
     return;
   }
 
@@ -538,27 +650,39 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  const close = e.target.closest('[data-close]');
-  if (close) {
-    const taskId = close.getAttribute('data-id');
-    close.disabled = true;
-    try { await closeTask(taskId); } finally { close.disabled = false; }
+  const complete = e.target.closest('[data-complete]');
+  if (complete) {
+    const taskId = complete.getAttribute('data-id');
+    complete.disabled = true;
+    try { await completeTask(taskId); } finally { complete.disabled = false; }
   }
 });
+
+viewCurrentBtn.addEventListener('click', () => setBoardView('current'));
+viewAllBtn.addEventListener('click', () => setBoardView('all'));
 
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';
 } else {
-  currentProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User', email: 'access@brewledger.local' };
-  userNameEl.textContent = currentProfile.name || currentProfile.email || 'Staff';
+  currentBar = ensureBarOrRedirect(window.location.pathname);
+  if (currentBar) {
+    await ensureBarMigration(db).catch(() => {});
+    applyBarHeader(document.getElementById('currentBarChip'), document.getElementById('switchBarBtn'), currentBar);
+    heroCopyEl.textContent = `Track requests for ${currentBar}, or switch to all-bars mode for stock-room collection.`;
+    panelCopyEl.textContent = `Current mode: ${boardMode === 'all' ? 'All Bars' : currentBar}. Collect items, then mark completed when fulfilled.`;
+    updateModeButtons();
 
-  if (tasksUnsub) tasksUnsub();
-  tasksUnsub = onSnapshot(collection(db, 'restock_tasks'), (snap) => {
-    const tasks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
-    renderTasks(tasks);
-  }, () => {
-    taskListEl.innerHTML = '<div class="panel empty">Could not load tasks right now.</div>';
-  });
+    currentProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User', email: 'access@brewledger.local' };
+    userNameEl.textContent = currentProfile.name || currentProfile.email || 'Staff';
+
+    if (tasksUnsub) tasksUnsub();
+    tasksUnsub = onSnapshot(collection(db, 'restock_tasks'), (snap) => {
+      const tasks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
+      renderTasks(tasks);
+    }, () => {
+      taskListEl.innerHTML = '<div class="panel empty">Could not load tasks right now.</div>';
+    });
+  }
 }
 </script>
 </body>

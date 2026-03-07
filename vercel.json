@@ -15,6 +15,7 @@
     { "src": "/welcome.html",    "dest": "/welcome.html" },
     { "src": "/login.html",      "dest": "/login.html" },
     { "src": "/signup.html",     "dest": "/signup.html" },
+    { "src": "/bar-select.html", "dest": "/bar-select.html" },
     { "src": "/dashboard.html",  "dest": "/dashboard.html" },
     { "src": "/index.html",      "dest": "/dashboard.html" },
     { "src": "/record.html",     "dest": "/record.html" },

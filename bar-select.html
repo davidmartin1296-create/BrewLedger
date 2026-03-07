@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brew-Ledger — Select Bar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/images/B-Logo.png">
+<link rel="apple-touch-icon" href="/images/B-Logo.png">
+<meta name="theme-color" content="#12100e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;color:#f5f3ef;min-height:100vh;background:radial-gradient(120% 120% at 0% 0%,#241a12 0%,#12100e 45%,#0e0c0a 100%)}
+a,button{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid #f7d8b8;outline-offset:2px}
+.page{max-width:680px;margin:0 auto;min-height:100vh;min-height:100svh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) 16px 24px;display:flex;align-items:center}
+.card{width:100%;background:linear-gradient(145deg,rgba(184,115,51,.13),rgba(28,25,22,.95));border:1px solid rgba(184,115,51,.38);border-radius:22px;padding:18px;box-shadow:0 20px 44px rgba(0,0,0,.4)}
+.hero{height:120px;border-radius:14px;margin-bottom:12px;background:linear-gradient(165deg,rgba(10,8,6,.34),rgba(10,8,6,.82)),url('/images/app-Brews.png') center/cover no-repeat;border:1px solid rgba(212,154,93,.28);display:flex;align-items:flex-end;padding:10px}
+.hero-txt{font-size:12px;color:#f7d8b8;font-weight:700}
+h1{font-size:25px;font-weight:800;letter-spacing:-.5px}
+.sub{margin-top:6px;font-size:13px;color:rgba(245,243,239,.72);line-height:1.45}
+.current{margin-top:12px;font-size:13px;color:rgba(247,216,184,.9)}
+.grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn{min-height:52px;border-radius:12px;border:1px solid rgba(184,115,51,.38);background:rgba(184,115,51,.1);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 10px}
+.btn.active{background:linear-gradient(135deg,#9b5f2b,#b87333);border-color:#da9a5c}
+.row{display:flex;gap:8px;margin-top:14px}
+.action{height:50px;border-radius:12px;border:1px solid #da9a5c;background:linear-gradient(135deg,#9b5f2b,#b87333);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;flex:1}
+.ghost{height:50px;border-radius:12px;border:1px solid rgba(184,115,51,.4);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;flex:1}
+.msg{margin-top:10px;font-size:13px;color:#fcd34d;min-height:16px}
+@media (max-width:460px){
+  .grid{grid-template-columns:1fr}
+  .row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="card">
+    <div class="hero"><div class="hero-txt">Shared stock requests across every bar</div></div>
+    <h1>Select Your Bar</h1>
+    <p class="sub">Choose where you are working now. You can switch this at any time from the page header.</p>
+    <p class="current" id="currentBarLabel"></p>
+    <div class="grid" id="barGrid"></div>
+    <div class="row">
+      <button class="action" id="continueBtn" type="button">Continue</button>
+      <button class="ghost" id="logoutBtn" type="button">Log Out</button>
+    </div>
+    <div class="msg" id="message"></div>
+  </section>
+</main>
+
+<script type="module">
+import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { auth } from "./firebase.js";
+import { BAR_OPTIONS, DEFAULT_BAR, clearSelectedBar, getSelectedBar, setSelectedBar } from "./data/barContext.js";
+
+function hasCodeAccess() {
+  return localStorage.getItem('brew_access_granted') === '1';
+}
+
+if (!hasCodeAccess()) {
+  window.location.href = '/login.html';
+}
+
+const params = new URLSearchParams(window.location.search);
+const rawNext = params.get('next') || '/dashboard.html';
+const nextPath = rawNext.startsWith('/') ? rawNext : '/dashboard.html';
+const barGridEl = document.getElementById('barGrid');
+const messageEl = document.getElementById('message');
+const currentBarLabelEl = document.getElementById('currentBarLabel');
+let selectedBar = getSelectedBar() || DEFAULT_BAR;
+
+function renderBarButtons() {
+  barGridEl.innerHTML = BAR_OPTIONS.map((bar) => `
+    <button class="btn ${selectedBar === bar ? 'active' : ''}" type="button" data-bar="${bar}">
+      ${bar}
+    </button>
+  `).join('');
+  currentBarLabelEl.textContent = `Current selection: ${selectedBar}`;
+}
+
+renderBarButtons();
+
+barGridEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-bar]');
+  if (!btn) return;
+  selectedBar = btn.getAttribute('data-bar') || DEFAULT_BAR;
+  renderBarButtons();
+});
+
+document.getElementById('continueBtn').addEventListener('click', () => {
+  const nextBar = setSelectedBar(selectedBar);
+  messageEl.textContent = `Bar set to ${nextBar}. Redirecting…`;
+  window.location.href = nextPath;
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try {
+    await signOut(auth);
+  } catch {
+    // Keep local logout behavior even when auth sign-out fails.
+  } finally {
+    clearSelectedBar();
+    localStorage.removeItem('brew_access_granted');
+    localStorage.removeItem('brew_access_name');
+    window.location.href = '/welcome.html';
+  }
+});
+</script>
+</body>
+</html>

@@ -82,6 +82,10 @@ function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
 
+function nextAfterAuth() {
+  return localStorage.getItem('brew_selected_bar') ? '/dashboard.html' : '/bar-select.html';
+}
+
 function grantCodeAccess(name = 'Bar Staff') {
   localStorage.setItem('brew_access_granted', '1');
   localStorage.setItem('brew_access_name', name);
@@ -102,11 +106,11 @@ function submitQuickAccess() {
     return;
   }
   grantCodeAccess('Access Code User');
-  window.location.href = '/dashboard.html';
+  window.location.href = nextAfterAuth();
 }
 
 if (hasCodeAccess()) {
-  window.location.href = '/dashboard.html';
+  window.location.href = nextAfterAuth();
 }
 
 quickCodeInput.addEventListener('input', () => {

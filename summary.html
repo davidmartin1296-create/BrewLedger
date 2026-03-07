@@ -105,7 +105,11 @@ body {
 
 .banner-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; margin-bottom: 4px; }
 
-.banner-date { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
+.banner-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.banner-date { font-size: 13px; color: rgba(255,255,255,0.45); }
+.bar-tools{display:flex;align-items:center;gap:8px}
+.bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(167,139,250,0.18);border:1px solid rgba(167,139,250,0.35);color:#e9ddff;white-space:nowrap}
+.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(167,139,250,0.45);background:rgba(167,139,250,0.12);color:#e9ddff;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
 
 .banner-stats { display: flex; gap: 20px; }
 
@@ -410,7 +414,13 @@ body {
       <span class="banner-brand-name">Brew-Ledger</span>
     </div>
     <div class="banner-title">Night Summary</div>
-    <div class="banner-date" id="bannerDate">—</div>
+    <div class="banner-meta">
+      <div class="banner-date" id="bannerDate">—</div>
+      <div class="bar-tools">
+        <div class="bar-pill" id="currentBarChip">Bar: —</div>
+        <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>
+      </div>
+    </div>
     <div class="banner-stats">
       <div class="stat-block">
         <div class="stat-num blue" id="statUsed">0</div>
@@ -510,9 +520,10 @@ body {
 </nav>
 
 <script type="module">
-
 import { collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
+import { DEFAULT_BAR, applyBarHeader, barToKey, ensureBarOrRedirect, normalizeBar } from "./data/barContext.js";
+import { ensureBarMigration } from "./data/barMigration.js";
 
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
@@ -524,31 +535,40 @@ if (!hasCodeAccess()) {
 
 let inventoryData = [];
 let nightSession  = { startedAt: '', items: {} };
+let currentBar = null;
+let sessionRef = null;
 
-const inventoryCol = collection(db, 'inventory');
-const sessionRef   = doc(db, 'sessions', 'current');
+if (hasCodeAccess()) {
+  currentBar = ensureBarOrRedirect(window.location.pathname);
+  if (currentBar) {
+    await ensureBarMigration(db).catch(() => {});
+    applyBarHeader(document.getElementById('currentBarChip'), document.getElementById('switchBarBtn'), currentBar);
+    sessionRef = doc(db, 'sessions', barToKey(currentBar));
 
-onSnapshot(inventoryCol, (snap) => {
-  inventoryData = snap.docs
-    .map((d) => ({ _id: d.id, ...d.data() }))
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
-  renderPage();
-});
+    onSnapshot(collection(db, 'inventory'), (snap) => {
+      inventoryData = snap.docs
+        .map((d) => ({ _id: d.id, ...d.data() }))
+        .filter((d) => (normalizeBar(d.bar) || DEFAULT_BAR) === currentBar)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+      renderPage();
+    });
 
-onSnapshot(sessionRef, async (snap) => {
-  if (snap.exists()) {
-    nightSession = snap.data();
-    if (!nightSession.items) nightSession.items = {};
-    if (!nightSession.startedAt) {
-      await setDoc(sessionRef, { ...nightSession, startedAt: todayLabel() }, { merge: true });
-      return;
-    }
-  } else {
-    nightSession = { startedAt: todayLabel(), items: {} };
-    await setDoc(sessionRef, nightSession);
+    onSnapshot(sessionRef, async (snap) => {
+      if (snap.exists()) {
+        nightSession = snap.data();
+        if (!nightSession.items) nightSession.items = {};
+        if (!nightSession.startedAt) {
+          await setDoc(sessionRef, { ...nightSession, startedAt: todayLabel() }, { merge: true });
+          return;
+        }
+      } else {
+        nightSession = { startedAt: todayLabel(), items: {} };
+        await setDoc(sessionRef, nightSession);
+      }
+      renderPage();
+    });
   }
-  renderPage();
-});
+}
 
 function getItem(name) {
   return nightSession.items[name] || { used: 0, replaced: 0 };
@@ -585,7 +605,8 @@ function renderPage() {
   shortageDrinks.sort((a, b) => b.outstanding - a.outstanding);
 
   // Banner stats
-  document.getElementById('bannerDate').textContent     = nightSession.startedAt || '—';
+  const dateValue = nightSession.startedAt || '—';
+  document.getElementById('bannerDate').textContent = `${dateValue} · ${currentBar || '—'}`;
   document.getElementById('statUsed').textContent        = totalUsed;
   document.getElementById('statReplaced').textContent    = totalReplaced;
   document.getElementById('statOutstanding').textContent = totalOutstanding;
@@ -698,6 +719,7 @@ function handleOverlayTap(e) {
 }
 
 async function confirmReset() {
+  if (!sessionRef) return;
   await setDoc(sessionRef, { startedAt: todayLabel(), items: {} }, { merge: true });
   closeModal();
 }

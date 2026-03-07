@@ -97,6 +97,11 @@ function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
 }
 
+function nextAfterAuth() {
+  return localStorage.getItem('brew_selected_bar') ? '/dashboard.html' : '/bar-select.html';
+}
+window.nextAfterAuth = nextAfterAuth;
+
 function submitQuickAccess() {
   const code = accessCodeInput.value.trim().toUpperCase();
   accessCodeInput.value = code;
@@ -105,13 +110,13 @@ function submitQuickAccess() {
     return;
   }
   grantCodeAccess('Access Code User');
-  window.location.href = '/dashboard.html';
+  window.location.href = nextAfterAuth();
 }
 
 window.showAuthToast = showAuthToast;
 
 if (hasCodeAccess()) {
-  window.location.href = '/dashboard.html';
+  window.location.href = nextAfterAuth();
 }
 
 accessCodeInput.addEventListener('input', () => {
@@ -156,7 +161,7 @@ onAuthStateChanged(auth, (u) => {
   if (!u) return;
   localStorage.setItem('brew_access_granted', '1');
   localStorage.setItem('brew_access_name', u.displayName || u.email || 'Bar Staff');
-  window.location.href = '/dashboard.html';
+  window.location.href = window.nextAfterAuth ? window.nextAfterAuth() : '/bar-select.html';
 });
 
 form.addEventListener('submit', async (e) => {
@@ -167,7 +172,7 @@ form.addEventListener('submit', async (e) => {
     await signInWithEmailAndPassword(auth, email, document.getElementById('password').value);
     localStorage.setItem('brew_access_granted', '1');
     localStorage.setItem('brew_access_name', email || 'Bar Staff');
-    window.location.href = '/dashboard.html';
+    window.location.href = window.nextAfterAuth ? window.nextAfterAuth() : '/bar-select.html';
   } catch (err) {
     window.showAuthToast(explainLoginError(err));
   } finally {

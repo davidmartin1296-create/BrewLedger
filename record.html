@@ -29,7 +29,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1}
+.header-meta{display:flex;align-items:center;gap:8px}
+.bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
+.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -106,13 +109,17 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Record Inventory</div>
+  <div class="header-meta">
+    <div class="bar-pill" id="currentBarChip">Bar: —</div>
+    <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>
+  </div>
 </header>
 
 <main class="main">
   <section class="hero">
     <div>
       <h1>Bar Walk-Through</h1>
-      <p>Pick from the drink list and log shortages quickly while moving around the bar.</p>
+      <p id="heroBarCopy">Pick from the drink list and log shortages quickly while moving around the bar.</p>
     </div>
   </section>
   <section class="panel">
@@ -125,9 +132,15 @@ a,button,input{-webkit-tap-highlight-color:transparent}
       <div id="catalogList"></div>
     </div>
 
-    <div id="selectedBox" class="selected" style="display:none">
-      <div class="title" id="selectedDrink">—</div>
-      <div class="help">How many bottles need replacing at the bar?</div>
+    <div id="selectedBox" class="selected">
+      <div class="title" id="selectedDrink">NEW REQUEST</div>
+      <div class="help">Choose an item from the list or type a custom item name, then set quantity and save.</div>
+      <div class="row">
+        <input id="itemNameInput" class="input" type="text" placeholder="Item name (editable)">
+      </div>
+      <div class="row">
+        <select id="requestBarSelect" class="input" aria-label="Request bar"></select>
+      </div>
       <div class="qty-grid">
         <button class="qty-btn" data-qty="1">+1</button>
         <button class="qty-btn" data-qty="2">+2</button>
@@ -177,11 +190,14 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 import { addDoc, collection, getDocs, onSnapshot, query, where, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
 import { barStockList, getAllMasterDrinks } from "./data/barStockList.js";
+import { BAR_OPTIONS, DEFAULT_BAR, applyBarHeader, ensureBarOrRedirect, normalizeBar } from "./data/barContext.js";
+import { ensureBarMigration } from "./data/barMigration.js";
 
 let drinks = [];
 let selectedDrink = null;
 let selectedDrinkId = null;
 let selectedQty = 1;
+let currentBar = null;
 let userProfile = { name: localStorage.getItem('brew_access_name') || 'Access Code User' };
 const masterDrinks = getAllMasterDrinks();
 
@@ -195,14 +211,36 @@ const catalogListEl = document.getElementById('catalogList');
 const selectedBox = document.getElementById('selectedBox');
 const selectedDrinkEl = document.getElementById('selectedDrink');
 const selectedHelpEl = selectedBox.querySelector('.help');
+const itemNameInput = document.getElementById('itemNameInput');
 const qtyDisplayEl = document.getElementById('qtyDisplay');
 const qtyInput = document.getElementById('qtyInput');
 const messageEl = document.getElementById('message');
+const requestBarSelect = document.getElementById('requestBarSelect');
 const increaseQtyBtn = document.getElementById('increaseQtyBtn');
 const decreaseQtyBtn = document.getElementById('decreaseQtyBtn');
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+}
+
+function toNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+renderQtyDisplay();
+
+function normalizeTaskStatus(task) {
+  const raw = String(task?.status || '').trim().toLowerCase();
+  const neededQty = Math.max(0, toNum(task?.neededQty, 0));
+  const collectedQty = Math.max(0, toNum(task?.replacedQty, 0));
+  const outstandingQty = Math.max(0, toNum(task?.outstandingQty, neededQty - collectedQty));
+  if (raw === 'requested' || raw === 'collected' || raw === 'completed') return raw;
+  if (raw === 'active') return collectedQty > 0 ? 'collected' : 'requested';
+  if (raw === 'complete') return 'collected';
+  if (raw === 'closed') return 'completed';
+  if (outstandingQty <= 0) return 'collected';
+  return collectedQty > 0 ? 'collected' : 'requested';
 }
 
 function renderQtyDisplay() {
@@ -257,30 +295,41 @@ function renderCatalog(queryText) {
 
 function mergeDrinksWithMaster(dbDrinks) {
   const byName = new Map();
+  const masterByName = new Map();
 
   masterDrinks.forEach((d, i) => {
-    byName.set(d.name.toLowerCase(), { _id: `master-${i}`, name: d.name, category: d.category });
+    const key = d.name.toLowerCase();
+    const masterDrink = { _id: `master-${i}`, name: d.name, category: d.category };
+    masterByName.set(key, masterDrink);
+    byName.set(key, masterDrink);
   });
 
   dbDrinks.forEach((d) => {
     if (!d.name) return;
-    byName.set(d.name.toLowerCase(), {
+    const key = d.name.toLowerCase();
+    const masterDrink = masterByName.get(key);
+    byName.set(key, {
       _id: d._id,
       name: d.name,
-      category: d.category || 'Other'
+      category: masterDrink ? masterDrink.category : (d.category || 'Other')
     });
   });
 
   return Array.from(byName.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
+function initBarSelect() {
+  requestBarSelect.innerHTML = BAR_OPTIONS.map((bar) => `<option value="${bar}">${bar}</option>`).join('');
+  requestBarSelect.value = currentBar || BAR_OPTIONS[0];
+}
+
 function pickDrink(drink) {
   selectedDrink = drink;
   selectedDrinkId = drink._id;
   selectedQty = 1;
-  selectedDrinkEl.textContent = (drink.name || '').toUpperCase();
-  selectedHelpEl.textContent = 'Stock needed at bar: default 1 bottle. Adjust quantity, then save task.';
-  selectedBox.style.display = 'block';
+  selectedDrinkEl.textContent = 'SELECTED ITEM';
+  selectedHelpEl.textContent = 'Adjust item, bar, and quantity before saving.';
+  itemNameInput.value = drink.name || '';
   qtyInput.value = '';
   renderQtyDisplay();
   messageEl.textContent = `${drink.name}: marked as needing restock.`;
@@ -292,30 +341,43 @@ function pickDrink(drink) {
 }
 
 async function saveTask() {
-  if (!selectedDrink) return;
+  if (!currentBar) return;
+  const itemName = (itemNameInput.value || selectedDrink?.name || searchInput.value || '').trim();
+  if (!itemName) {
+    messageEl.style.color = '#fcd34d';
+    messageEl.textContent = 'Enter an item name or select one from the list.';
+    return;
+  }
   const custom = Number(qtyInput.value || 0);
   const qty = custom > 0 ? custom : selectedQty;
   if (!qty || qty < 1) return;
+  const targetBar = requestBarSelect.value || currentBar;
 
-  const taskQ = query(collection(db, 'restock_tasks'), where('drinkName', '==', selectedDrink.name), where('status', '==', 'active'));
+  const taskQ = query(collection(db, 'restock_tasks'), where('drinkName', '==', itemName), where('bar', '==', targetBar));
   const existing = await getDocs(taskQ);
+  const openTasks = existing.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((d) => normalizeTaskStatus(d) !== 'completed')
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
-  if (!existing.empty) {
-    const ref = doc(db, 'restock_tasks', existing.docs[0].id);
-    const prev = existing.docs[0].data();
-    const replaced = Number(prev.replacedQty || 0);
-    const nextNeeded = Number(prev.neededQty || 0) + qty;
+  if (openTasks.length) {
+    const prev = openTasks[0];
+    const ref = doc(db, 'restock_tasks', prev.id);
+    const collectedQty = Math.max(0, toNum(prev.replacedQty, 0));
+    const nextNeeded = Math.max(0, toNum(prev.neededQty, 0)) + qty;
     await updateDoc(ref, {
       neededQty: increment(qty),
-      outstandingQty: Math.max(0, nextNeeded - replaced),
+      outstandingQty: Math.max(0, nextNeeded - collectedQty),
+      status: collectedQty > 0 ? 'collected' : 'requested',
       updatedAt: new Date().toISOString()
     });
-    messageEl.textContent = `${selectedDrink.name}: added ${qty} bottles to existing task.`;
+    messageEl.textContent = `${itemName}: added ${qty} bottles to existing ${targetBar} request.`;
     messageEl.style.color = '#86efac';
   } else {
     await addDoc(collection(db, 'restock_tasks'), {
-      drinkName: selectedDrink.name,
-      drinkId: selectedDrink._id,
+      drinkName: itemName,
+      drinkId: selectedDrinkId || null,
+      bar: targetBar,
       neededQty: qty,
       replacedQty: 0,
       outstandingQty: qty,
@@ -323,9 +385,9 @@ async function saveTask() {
       createdBy: null,
       createdByName: userProfile?.name || localStorage.getItem('brew_access_name') || 'Access Code User',
       createdAt: new Date().toISOString(),
-      status: 'active'
+      status: 'requested'
     });
-    messageEl.textContent = `${selectedDrink.name}: ${qty} bottles needed.`;
+    messageEl.textContent = `${itemName}: ${qty} bottles requested for ${targetBar}.`;
     messageEl.style.color = '#86efac';
   }
 }
@@ -351,6 +413,15 @@ document.addEventListener('click', async (e) => {
 
 searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
 searchInput.addEventListener('input', () => renderCatalog(searchInput.value));
+itemNameInput.addEventListener('input', () => {
+  const currentValue = itemNameInput.value.trim().toLowerCase();
+  const selectedName = (selectedDrink?.name || '').toLowerCase();
+  if (!currentValue || currentValue !== selectedName) {
+    selectedDrink = null;
+    selectedDrinkId = null;
+    selectedDrinkEl.textContent = 'CUSTOM ITEM';
+  }
+});
 qtyInput.addEventListener('input', () => {
   const val = Math.max(1, Number(qtyInput.value || 1));
   if (qtyInput.value) {
@@ -376,16 +447,25 @@ document.getElementById('saveBtn').addEventListener('click', saveTask);
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';
 } else {
-  onSnapshot(collection(db, 'drinks'), (snap) => {
-    const dbDrinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
-    drinks = mergeDrinksWithMaster(dbDrinks);
-    renderSuggestions(searchInput.value);
-    renderCatalog(searchInput.value);
-  }, () => {
-    drinks = masterDrinks.map((d, i) => ({ _id: `master-${i}`, ...d }));
-    renderSuggestions(searchInput.value);
-    renderCatalog(searchInput.value);
-  });
+  currentBar = ensureBarOrRedirect(window.location.pathname);
+  if (currentBar) {
+    await ensureBarMigration(db).catch(() => {});
+    applyBarHeader(document.getElementById('currentBarChip'), document.getElementById('switchBarBtn'), currentBar);
+    document.getElementById('heroBarCopy').textContent = `Pick drinks for ${currentBar}, or type a custom item to raise a stock request.`;
+    initBarSelect();
+    onSnapshot(collection(db, 'drinks'), (snap) => {
+      const dbDrinks = snap.docs
+        .map((d) => ({ _id: d.id, ...d.data() }))
+        .filter((d) => (normalizeBar(d.bar) || DEFAULT_BAR) === currentBar);
+      drinks = mergeDrinksWithMaster(dbDrinks);
+      renderSuggestions(searchInput.value);
+      renderCatalog(searchInput.value);
+    }, () => {
+      drinks = masterDrinks.map((d, i) => ({ _id: `master-${i}`, ...d }));
+      renderSuggestions(searchInput.value);
+      renderCatalog(searchInput.value);
+    });
+  }
 }
 </script>
 </body>

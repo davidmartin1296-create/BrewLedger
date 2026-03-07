@@ -29,7 +29,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1}
+.header-meta{display:flex;align-items:center;gap:8px}
+.bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
+.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -81,6 +84,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Settings</div>
+  <div class="header-meta">
+    <div class="bar-pill" id="currentBarChip">Bar: —</div>
+    <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>
+  </div>
 </header>
 
 <main class="main">
@@ -140,7 +147,9 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 
 <script type="module">
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { auth } from "./firebase.js";
+import { auth, db } from "./firebase.js";
+import { applyBarHeader, clearSelectedBar, ensureBarOrRedirect } from "./data/barContext.js";
+import { ensureBarMigration } from "./data/barMigration.js";
 
 function hasCodeAccess() {
   return localStorage.getItem('brew_access_granted') === '1';
@@ -149,10 +158,15 @@ function hasCodeAccess() {
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';
 } else {
-  const name = localStorage.getItem('brew_access_name') || 'Access Code User';
-  document.getElementById('name').textContent = name;
-  document.getElementById('email').textContent = 'access@brewledger.local';
-  document.getElementById('role').textContent = 'staff';
+  const currentBar = ensureBarOrRedirect(window.location.pathname);
+  if (currentBar) {
+    await ensureBarMigration(db).catch(() => {});
+    applyBarHeader(document.getElementById('currentBarChip'), document.getElementById('switchBarBtn'), currentBar);
+    const name = localStorage.getItem('brew_access_name') || 'Access Code User';
+    document.getElementById('name').textContent = name;
+    document.getElementById('email').textContent = 'access@brewledger.local';
+    document.getElementById('role').textContent = 'staff';
+  }
 }
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -161,6 +175,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   } catch {
     // Continue with local logout even if remote sign-out fails.
   } finally {
+    clearSelectedBar();
     localStorage.removeItem('brew_access_granted');
     localStorage.removeItem('brew_access_name');
     window.location.href = '/welcome.html';

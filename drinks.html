@@ -28,7 +28,10 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 .header{position:sticky;top:0;z-index:20;background:rgba(18,16,14,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px}
 .logo{width:34px;height:34px;border-radius:10px;padding:4px;background:linear-gradient(145deg,rgba(184,115,51,.32),rgba(184,115,51,.12));border:1px solid rgba(212,154,93,.45);flex-shrink:0}
 .logo img{width:100%;height:100%;object-fit:contain}
-.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px;flex:1}
+.header-meta{display:flex;align-items:center;gap:8px}
+.bar-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(184,115,51,.18);border:1px solid rgba(184,115,51,.38);color:#f7d8b8;white-space:nowrap}
+.bar-switch{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(184,115,51,.45);background:rgba(184,115,51,.12);color:#f7d8b8;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer}
 
 /* ── Main ── */
 .main{padding:16px;max-width:760px;margin:0 auto;display:grid;gap:14px}
@@ -88,13 +91,17 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <header class="header">
   <div class="logo"><img src="/images/B-Logo.png" alt="Brewhemia B logo"></div>
   <div class="brand">Drinks List</div>
+  <div class="header-meta">
+    <div class="bar-pill" id="currentBarChip">Bar: —</div>
+    <button class="bar-switch" id="switchBarBtn" type="button">Switch</button>
+  </div>
 </header>
 
 <main class="main">
   <section class="hero">
     <div>
       <h1>Master Drinks</h1>
-      <p>Manage the stock list used by autocomplete when staff record inventory.</p>
+      <p id="heroBar">Manage the stock list used by autocomplete when staff record inventory.</p>
     </div>
   </section>
   <section class="card">
@@ -139,12 +146,15 @@ a,button,input{-webkit-tap-highlight-color:transparent}
 <script type="module">
 import { addDoc, collection, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
+import { DEFAULT_BAR, applyBarHeader, ensureBarOrRedirect, normalizeBar } from "./data/barContext.js";
+import { ensureBarMigration } from "./data/barMigration.js";
 
 const listEl = document.getElementById('drinkList');
 const msgEl = document.getElementById('message');
 let currentDrinks = [];
 let hasLiveSync = false;
 let masterDrinks = [];
+let currentBar = null;
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
 function hasCodeAccess() { return localStorage.getItem('brew_access_granted') === '1'; }
@@ -173,7 +183,16 @@ function renderDrinks(drinks, options = {}) {
 function renderMergedList(dbDrinks) {
   const byDrink = new Map();
   masterDrinks.forEach((d) => byDrink.set((d.name || '').toLowerCase(), d));
-  dbDrinks.forEach((d) => byDrink.set((d.name || '').toLowerCase(), d));
+  dbDrinks.forEach((d) => {
+    const key = (d.name || '').toLowerCase();
+    if (!key) return;
+    const master = byDrink.get(key);
+    if (master && String(master._id || '').startsWith('master-')) {
+      byDrink.set(key, { ...d, category: master.category || d.category || 'Other' });
+      return;
+    }
+    byDrink.set(key, d);
+  });
   renderDrinks(Array.from(byDrink.values()), { readOnly: !hasLiveSync });
 }
 
@@ -189,32 +208,40 @@ async function initMasterList() {
   }
 }
 
-await initMasterList();
-
 if (!hasCodeAccess()) {
   window.location.href = '/login.html';
 } else {
-  listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.55)">Loading drinks list…</div>';
+  currentBar = ensureBarOrRedirect(window.location.pathname);
+  if (currentBar) {
+    await ensureBarMigration(db).catch(() => {});
+    await initMasterList();
+    applyBarHeader(document.getElementById('currentBarChip'), document.getElementById('switchBarBtn'), currentBar);
+    document.getElementById('heroBar').textContent = `Manage drinks for ${currentBar}. This list powers autocomplete for stock requests.`;
+    listEl.innerHTML = '<div style="font-size:13px;color:rgba(245,243,239,.55)">Loading drinks list…</div>';
 
-  onSnapshot(collection(db, 'drinks'), (snap) => {
-    hasLiveSync = true;
-    currentDrinks = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
-    renderMergedList(currentDrinks);
-    msgEl.textContent = '';
-  }, (err) => {
-    hasLiveSync = false;
-    currentDrinks = [];
-    renderDrinks(masterDrinks, { readOnly: true });
-    msgEl.style.color = '#fcd34d';
-    if (err?.code === 'permission-denied') {
-      msgEl.textContent = 'Live drinks sync is blocked by Firebase rules. Showing master list only.';
-      return;
-    }
-    msgEl.textContent = 'Could not load live drinks from Firebase. Showing master list only.';
-  });
+    onSnapshot(collection(db, 'drinks'), (snap) => {
+      hasLiveSync = true;
+      currentDrinks = snap.docs
+        .map((d) => ({ _id: d.id, ...d.data() }))
+        .filter((d) => (normalizeBar(d.bar) || DEFAULT_BAR) === currentBar);
+      renderMergedList(currentDrinks);
+      msgEl.textContent = '';
+    }, (err) => {
+      hasLiveSync = false;
+      currentDrinks = [];
+      renderDrinks(masterDrinks, { readOnly: true });
+      msgEl.style.color = '#fcd34d';
+      if (err?.code === 'permission-denied') {
+        msgEl.textContent = 'Live drinks sync is blocked by Firebase rules. Showing master list only.';
+        return;
+      }
+      msgEl.textContent = 'Could not load live drinks from Firebase. Showing master list only.';
+    });
+  }
 }
 
 document.getElementById('addBtn').addEventListener('click', async () => {
+  if (!currentBar) return;
   if (!hasLiveSync) {
     msgEl.style.color = '#fcd34d';
     msgEl.textContent = 'Live Firebase access is unavailable, so new drinks cannot be saved right now.';
@@ -225,7 +252,7 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   const category = document.getElementById('drinkCategory').value.trim() || 'Other';
   if (!name) return;
   try {
-    await addDoc(collection(db, 'drinks'), { name, category, createdAt: new Date().toISOString() });
+    await addDoc(collection(db, 'drinks'), { name, category, bar: currentBar, createdAt: new Date().toISOString() });
     document.getElementById('drinkName').value = '';
     document.getElementById('drinkCategory').value = '';
     msgEl.style.color = '#86efac';
@@ -237,6 +264,7 @@ document.getElementById('addBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('loadMasterBtn').addEventListener('click', async () => {
+  if (!currentBar) return;
   if (!hasLiveSync) {
     renderDrinks(masterDrinks, { readOnly: true });
     msgEl.style.color = '#fcd34d';
@@ -257,10 +285,10 @@ document.getElementById('loadMasterBtn').addEventListener('click', async () => {
   try {
     const now = new Date().toISOString();
     for (const drink of toAdd) {
-      await addDoc(collection(db, 'drinks'), { name: drink.name, category: drink.category, createdAt: now });
+      await addDoc(collection(db, 'drinks'), { name: drink.name, category: drink.category, bar: currentBar, createdAt: now });
     }
     msgEl.style.color = '#86efac';
-    msgEl.textContent = `Added ${toAdd.length} drinks from master list.`;
+    msgEl.textContent = `Added ${toAdd.length} drinks to ${currentBar}.`;
   } catch {
     msgEl.style.color = '#fcd34d';
     msgEl.textContent = 'Could not load master list into Firebase right now.';
